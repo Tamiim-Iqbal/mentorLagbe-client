@@ -10,7 +10,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-    title: "MentorLagbe",
+    title: "Mentor Lagbe",
     description: "Find the right mentor and start your learning journey with MentorLagbe.",
 };
 
