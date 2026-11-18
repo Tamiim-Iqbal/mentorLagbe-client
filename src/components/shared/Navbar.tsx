@@ -52,7 +52,7 @@ export default function Navbar() {
             prefetch={false}
             className="group flex items-center gap-2.5"
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand text-brand-foreground shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:rotate-[-5deg]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-brand-foreground shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:rotate-[-5deg]">
               <GraduationCap
                 className="h-5 w-5"
                 strokeWidth={2.2}
