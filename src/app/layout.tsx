@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import ThemeProvider from "@/components/theme/ThemeProvider";
 import { Toaster } from 'react-hot-toast';
+import { AuthProvider } from "./context/AuthContext";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
     variable: "--font-plus-jakarta-sans",
@@ -27,9 +28,11 @@ export default function RootLayout({
             className={`${plusJakartaSans.variable} h-full antialiased`}
         >
             <body className="min-h-full flex flex-col">
-                <ThemeProvider>
-                    {children}
-                </ThemeProvider>
+                <AuthProvider>
+                    <ThemeProvider>
+                        {children}
+                    </ThemeProvider>
+                </AuthProvider>
                 <Toaster />
             </body>
         </html>
