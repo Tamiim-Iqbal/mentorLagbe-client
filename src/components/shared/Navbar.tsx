@@ -167,7 +167,7 @@ export default function Navbar() {
               <GraduationCap className="h-5 w-5" strokeWidth={2.2} />
             </div>
 
-            <span className="text-xl font-bold tracking-tight text-brand">
+            <span className="text-xl font-extrabold tracking-tight text-brand">
               MentorLagbe
             </span>
           </Link>
