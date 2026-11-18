@@ -13,50 +13,108 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { signUp } from "@/lib/auth-client";
-import { useRouter } from "next/navigation"
+import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 
 type Role = "student" | "mentor" | "admin";
 
 const SignUp = () => {
-  const router = useRouter()
+    const router = useRouter();
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState<Role>("student");
+    const [showPassword, setShowPassword] = useState(false);
+    const [role, setRole] = useState<Role>("student");
+    const [passwordError, setPasswordError] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+    // Email validation
+    const validateEmail = (email: string) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    };
 
-    const formData = new FormData(e.currentTarget);
-    const result = Object.fromEntries(formData.entries());
+    // Password validation
+    const validatePassword = (password: string) => {
+        if (!password) {
+            return "Password is required.";
+        }
 
-    console.log("Signup form data:", {
-      ...result,
-      password: "[hidden]",
-      role,
-    });
+        if (password.length < 6) {
+            return "Password must be at least 6 characters long.";
+        }
 
-    // Database
-    const { data, error } = await signUp.email({
-      name: result.name as string,
-      email: result.email as string,
-      password: result.password as string,
-      userRole: role,
-    });
-    console.log("Signup result:", { data, error });
+        if (!/[A-Z]/.test(password)) {
+            return "Password must contain at least one uppercase letter.";
+        }
 
-    if (error) {
-      toast.error(error.message || "Something went wrong!");
-      console.error("Error signing up:", error)
-      // Handle the error (e.g., show an error message to the user)
-    } 
-    else {
-      toast.success("Account created successfully! Please sign in.");
-      console.log("Successfully signed up:", data)
-      router.push("/signin")
-      // Handle successful sign-up (e.g., redirect the user)
-    }
-  };
+        if (!/[a-z]/.test(password)) {
+            return "Password must contain at least one lowercase letter.";
+        }
+
+        return "";
+    };
+
+    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+
+        const formData = new FormData(e.currentTarget);
+        const result = Object.fromEntries(formData.entries());
+
+        const name = (result.name as string).trim();
+        const email = (result.email as string).trim();
+        const password = result.password as string;
+
+        // Email validation
+        if (!validateEmail(email)) {
+            toast.error("Please enter a valid email address.");
+            return;
+        }
+
+        // Password validation
+        const passwordValidation = validatePassword(password);
+
+        if (passwordValidation) {
+            setPasswordError(passwordValidation);
+            toast.error(passwordValidation);
+            return;
+        }
+
+        console.log("Signup form data:", {
+            ...result,
+            password: "[hidden]",
+            role,
+        });
+
+        setIsLoading(true);
+
+        try {
+            // Database
+            const { data, error } = await signUp.email({
+                name,
+                email,
+                password,
+                userRole: role,
+            });
+
+            console.log("Signup result:", { data, error });
+
+            if (error) {
+                toast.error(error.message || "Something went wrong!");
+                console.error("Error signing up:", error);
+                return;
+            }
+
+            toast.success("Account created successfully! Please sign in.");
+            console.log("Successfully signed up:", data);
+            router.push("/signin");
+        } 
+        catch (error) {
+            toast.error("Something went wrong!");
+            console.error("Signup error:", error);
+        } 
+        finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <main className="flex min-h-screen items-center justify-center bg-background px-4 py-8 transition-colors duration-300">
@@ -84,7 +142,7 @@ const SignUp = () => {
                     </p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} noValidate className="space-y-4">
 
                     {/* Full Name */}
                     <div>
@@ -105,8 +163,9 @@ const SignUp = () => {
                                 id="name"
                                 name="name"
                                 type="text"
-                                placeholder="e.g. Tanvir Hasan"
+                                placeholder="e.g. Tamim Iqbal"
                                 autoComplete="name"
+                                required
                                 className="h-[42px] w-full rounded-xl border border-border bg-background pl-10 pr-4 text-sm text-foreground outline-none transition placeholder:text-muted/70 focus:border-brand focus:ring-2 focus:ring-brand/10"
                             />
                         </div>
@@ -133,6 +192,7 @@ const SignUp = () => {
                                 type="email"
                                 placeholder="name@example.com"
                                 autoComplete="email"
+                                required
                                 className="h-[42px] w-full rounded-xl border border-border bg-background pl-10 pr-4 text-sm text-foreground outline-none transition placeholder:text-muted/70 focus:border-brand focus:ring-2 focus:ring-brand/10"
                             />
                         </div>
@@ -160,13 +220,17 @@ const SignUp = () => {
                                 placeholder="••••••••"
                                 minLength={6}
                                 autoComplete="new-password"
+                                required
+                                onChange={(e) =>
+                                    setPasswordError(validatePassword(e.target.value))
+                                }
                                 className="h-[42px] w-full rounded-xl border border-border bg-background pl-10 pr-11 text-sm text-foreground outline-none transition placeholder:text-muted/70 focus:border-brand focus:ring-2 focus:ring-brand/10"
                             />
 
                             <button
                                 type="button"
                                 onClick={() => setShowPassword((prev) => !prev)}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted transition hover:text-foreground"
+                                className="cursor-pointer absolute right-4 top-1/2 -translate-y-1/2 text-muted transition hover:text-foreground"
                                 aria-label={showPassword ? "Hide password" : "Show password"}
                             >
                                 {showPassword ? (
@@ -176,6 +240,12 @@ const SignUp = () => {
                                 )}
                             </button>
                         </div>
+
+                        {passwordError && (
+                            <p className="mt-1.5 text-xs text-red-500" role="alert">
+                                {passwordError}
+                            </p>
+                        )}
                     </div>
 
                     {/* Role Selection */}
@@ -191,15 +261,13 @@ const SignUp = () => {
                                 type="button"
                                 onClick={() => setRole("student")}
                                 aria-pressed={role === "student"}
-                                className={`flex h-[42px] items-center gap-2 rounded-xl border px-3 text-xs font-medium transition ${role === "student"
+                                className={`flex h-[42px] items-center gap-2 rounded-xl border px-3 text-xs font-medium transition cursor-pointer ${role === "student"
                                     ? "border-brand bg-brand-tint text-brand"
                                     : "border-border bg-surface text-foreground hover:border-brand"
                                     }`}
                             >
                                 <span
-                                    className={`flex h-3.5 w-3.5 items-center justify-center rounded-full border ${role === "student"
-                                        ? "border-brand"
-                                        : "border-muted"
+                                    className={`flex h-3.5 w-3.5 items-center justify-center rounded-full border ${role === "student" ? "border-brand" : "border-muted"
                                         }`}
                                 >
                                     {role === "student" && (
@@ -210,20 +278,18 @@ const SignUp = () => {
                                 Student / Learner
                             </button>
 
-                            {/* Tutor */}
+                            {/* Mentor */}
                             <button
                                 type="button"
                                 onClick={() => setRole("mentor")}
                                 aria-pressed={role === "mentor"}
-                                className={`flex h-[42px] items-center gap-2 rounded-xl border px-3 text-xs font-medium transition ${role === "mentor"
+                                className={`flex h-[42px] items-center gap-2 rounded-xl border px-3 text-xs font-medium transition cursor-pointer ${role === "mentor"
                                     ? "border-brand bg-brand-tint text-brand"
                                     : "border-border bg-surface text-foreground hover:border-brand"
                                     }`}
                             >
                                 <span
-                                    className={`flex h-3.5 w-3.5 items-center justify-center rounded-full border ${role === "mentor"
-                                        ? "border-brand"
-                                        : "border-muted"
+                                    className={`flex h-3.5 w-3.5 items-center justify-center rounded-full border ${role === "mentor" ? "border-brand" : "border-muted"
                                         }`}
                                 >
                                     {role === "mentor" && (
@@ -240,10 +306,17 @@ const SignUp = () => {
                     {/* Create Account */}
                     <button
                         type="submit"
-                        className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand text-sm font-semibold text-brand-foreground transition hover:bg-brand-hover active:scale-[0.98]"
+                        disabled={isLoading}
+                        className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand text-sm font-semibold text-brand-foreground transition hover:bg-brand-hover active:scale-[0.98] cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
                     >
-                        Create Account
-                        <ArrowRight size={16} />
+                        {isLoading ? (
+                            "Creating Account..."
+                        ) : (
+                            <>
+                                Create Account
+                                <ArrowRight size={16} />
+                            </>
+                        )}
                     </button>
 
                     {/* Divider */}
