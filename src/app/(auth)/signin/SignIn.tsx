@@ -32,6 +32,24 @@ const SignIn = () => {
             ? requestedCallback
             : "/";
 
+    const handleGoogleSignUp = async () => {
+        try {
+            const { data, error } = await signIn.social({
+                provider: "google",
+                callbackURL,
+            });
+
+            if (error) {
+                toast.error(error.message || "Google sign in failed!");
+                return;
+            }
+            console.log("Google Sign In Response:", data);
+        } catch (error) {
+            console.error("Google sign in error:", error);
+            toast.error("Something went wrong. Please try again.");
+        }
+    };
+
 
     const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
 
@@ -188,7 +206,8 @@ const SignIn = () => {
                     {/* Google */}
                     <button
                         type="button"
-                        className="mt-2 flex h-[39px] w-full items-center justify-center gap-3 rounded-xl border border-border bg-surface text-xs font-medium text-foreground transition hover:bg-accent"
+                        onClick={handleGoogleSignUp}
+                        className="mt-2 flex h-[39px] w-full items-center justify-center gap-3 rounded-xl border border-border bg-surface text-xs font-medium text-foreground transition hover:bg-accent cursor-pointer"
                     >
                         <Image
                             src="/logo/google.png"

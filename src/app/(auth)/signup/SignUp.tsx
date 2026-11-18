@@ -12,7 +12,7 @@ import {
     ArrowRight,
 } from "lucide-react";
 import Image from "next/image";
-import { signUp } from "@/lib/auth-client";
+import { signIn, signUp } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 
@@ -113,6 +113,18 @@ const SignUp = () => {
         } 
         finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleGoogleSignUp = async () => {
+        try {
+            const resData = await signIn.social({
+                provider: "google",
+            });
+            console.log("Google Sign Up Response:", resData);
+        } catch (error) {
+            console.error("Google signup error:", error);
+            toast.error("Google signup failed. Please try again.");
         }
     };
 
@@ -332,8 +344,9 @@ const SignUp = () => {
 
                     {/* Google */}
                     <button
+                        onClick={handleGoogleSignUp}
                         type="button"
-                        className="flex h-[39px] w-full items-center justify-center gap-3 rounded-xl border border-border bg-surface text-xs font-medium text-foreground transition hover:bg-accent"
+                        className="flex h-[39px] w-full items-center justify-center gap-3 rounded-xl border border-border bg-surface text-xs font-medium text-foreground transition hover:bg-accent cursor-pointer"
                     >
                         <Image
                             src="/logo/google.png"
