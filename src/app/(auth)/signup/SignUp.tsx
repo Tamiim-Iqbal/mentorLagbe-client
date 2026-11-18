@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import {
     GraduationCap,
     UserRound,
@@ -12,10 +12,51 @@ import {
     ArrowRight,
 } from "lucide-react";
 import Image from "next/image";
+import { signUp } from "@/lib/auth-client";
+import { useRouter } from "next/navigation"
+import { toast } from "react-hot-toast";
+
+type Role = "student" | "mentor" | "admin";
 
 const SignUp = () => {
-    const [showPassword, setShowPassword] = useState(false);
-    const [role, setRole] = useState("student");
+  const router = useRouter()
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [role, setRole] = useState<Role>("student");
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const formData = new FormData(e.currentTarget);
+    const result = Object.fromEntries(formData.entries());
+
+    console.log("Signup form data:", {
+      ...result,
+      password: "[hidden]",
+      role,
+    });
+
+    // Database
+    const { data, error } = await signUp.email({
+      name: result.name as string,
+      email: result.email as string,
+      password: result.password as string,
+      userRole: role,
+    });
+    console.log("Signup result:", { data, error });
+
+    if (error) {
+      toast.error(error.message || "Something went wrong!");
+      console.error("Error signing up:", error)
+      // Handle the error (e.g., show an error message to the user)
+    } 
+    else {
+      toast.success("Account created successfully! Please sign in.");
+      console.log("Successfully signed up:", data)
+      router.push("/signin")
+      // Handle successful sign-up (e.g., redirect the user)
+    }
+  };
 
     return (
         <main className="flex min-h-screen items-center justify-center bg-background px-4 py-8 transition-colors duration-300">
@@ -43,7 +84,7 @@ const SignUp = () => {
                     </p>
                 </div>
 
-                <form className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-4">
 
                     {/* Full Name */}
                     <div>
@@ -62,6 +103,7 @@ const SignUp = () => {
 
                             <input
                                 id="name"
+                                name="name"
                                 type="text"
                                 placeholder="e.g. Tanvir Hasan"
                                 autoComplete="name"
@@ -87,6 +129,7 @@ const SignUp = () => {
 
                             <input
                                 id="email"
+                                name="email"
                                 type="email"
                                 placeholder="name@example.com"
                                 autoComplete="email"
@@ -112,6 +155,7 @@ const SignUp = () => {
 
                             <input
                                 id="password"
+                                name="password"
                                 type={showPassword ? "text" : "password"}
                                 placeholder="••••••••"
                                 minLength={6}
@@ -147,18 +191,16 @@ const SignUp = () => {
                                 type="button"
                                 onClick={() => setRole("student")}
                                 aria-pressed={role === "student"}
-                                className={`flex h-[42px] items-center gap-2 rounded-xl border px-3 text-xs font-medium transition ${
-                                    role === "student"
-                                        ? "border-brand bg-brand-tint text-brand"
-                                        : "border-border bg-surface text-foreground hover:border-brand"
-                                }`}
+                                className={`flex h-[42px] items-center gap-2 rounded-xl border px-3 text-xs font-medium transition ${role === "student"
+                                    ? "border-brand bg-brand-tint text-brand"
+                                    : "border-border bg-surface text-foreground hover:border-brand"
+                                    }`}
                             >
                                 <span
-                                    className={`flex h-3.5 w-3.5 items-center justify-center rounded-full border ${
-                                        role === "student"
-                                            ? "border-brand"
-                                            : "border-muted"
-                                    }`}
+                                    className={`flex h-3.5 w-3.5 items-center justify-center rounded-full border ${role === "student"
+                                        ? "border-brand"
+                                        : "border-muted"
+                                        }`}
                                 >
                                     {role === "student" && (
                                         <span className="h-2 w-2 rounded-full bg-brand" />
@@ -171,22 +213,20 @@ const SignUp = () => {
                             {/* Tutor */}
                             <button
                                 type="button"
-                                onClick={() => setRole("tutor")}
-                                aria-pressed={role === "tutor"}
-                                className={`flex h-[42px] items-center gap-2 rounded-xl border px-3 text-xs font-medium transition ${
-                                    role === "tutor"
-                                        ? "border-brand bg-brand-tint text-brand"
-                                        : "border-border bg-surface text-foreground hover:border-brand"
-                                }`}
+                                onClick={() => setRole("mentor")}
+                                aria-pressed={role === "mentor"}
+                                className={`flex h-[42px] items-center gap-2 rounded-xl border px-3 text-xs font-medium transition ${role === "mentor"
+                                    ? "border-brand bg-brand-tint text-brand"
+                                    : "border-border bg-surface text-foreground hover:border-brand"
+                                    }`}
                             >
                                 <span
-                                    className={`flex h-3.5 w-3.5 items-center justify-center rounded-full border ${
-                                        role === "tutor"
-                                            ? "border-brand"
-                                            : "border-muted"
-                                    }`}
+                                    className={`flex h-3.5 w-3.5 items-center justify-center rounded-full border ${role === "mentor"
+                                        ? "border-brand"
+                                        : "border-muted"
+                                        }`}
                                 >
-                                    {role === "tutor" && (
+                                    {role === "mentor" && (
                                         <span className="h-2 w-2 rounded-full bg-brand" />
                                     )}
                                 </span>
@@ -199,7 +239,7 @@ const SignUp = () => {
 
                     {/* Create Account */}
                     <button
-                        type="button"
+                        type="submit"
                         className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand text-sm font-semibold text-brand-foreground transition hover:bg-brand-hover active:scale-[0.98]"
                     >
                         Create Account
