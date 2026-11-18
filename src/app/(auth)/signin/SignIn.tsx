@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -12,9 +11,66 @@ import {
     ArrowRight,
 } from "lucide-react";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
+import { signIn } from "@/lib/auth-client";
+import { toast } from "react-hot-toast";
 
 const SignIn = () => {
     const [showPassword, setShowPassword] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+
+
+    const searchParams = useSearchParams();
+    // Get the previous page URL
+    const requestedCallback = searchParams.get("callbackUrl");
+
+    // Allow only internal application paths
+    const callbackURL =
+        requestedCallback?.startsWith("/") &&
+            !requestedCallback.startsWith("//") &&
+            !requestedCallback.includes("\\")
+            ? requestedCallback
+            : "/";
+
+
+    const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
+
+        e.preventDefault();
+
+        if (isLoading) return;
+        try {
+            setIsLoading(true);
+
+            const formData = new FormData(e.currentTarget);
+
+            const user = Object.fromEntries(formData.entries()) as {
+                email: string;
+                password: string;
+            };
+
+            const { data, error } = await signIn.email({
+                ...user,
+                callbackURL,
+            });
+
+            if (error) {
+                toast.error("Invalid Email or Password");
+                console.error("Sign-in error:", error);
+                return;
+            }
+
+            if (data) {
+                toast.success("Signed in successfully!");
+                console.log("Successfully signed in:", data);
+            }
+        }
+        catch {
+            toast.error("Something went wrong. Please try again.");
+        }
+        finally {
+            setIsLoading(false);
+        }
+    }
 
     return (
         <main className="flex min-h-screen items-center justify-center bg-background px-4 py-8 transition-colors duration-300">
@@ -43,7 +99,7 @@ const SignIn = () => {
                     </p>
                 </div>
 
-                <form className="space-y-4">
+                <form onSubmit={handleSignIn} className="space-y-4">
 
                     {/* Email */}
                     <div>
@@ -62,6 +118,7 @@ const SignIn = () => {
 
                             <input
                                 id="email"
+                                name="email"
                                 type="email"
                                 placeholder="name@example.com"
                                 autoComplete="email"
@@ -87,6 +144,7 @@ const SignIn = () => {
 
                             <input
                                 id="password"
+                                name="password"
                                 type={showPassword ? "text" : "password"}
                                 placeholder="••••••••"
                                 autoComplete="current-password"
@@ -96,7 +154,7 @@ const SignIn = () => {
                             <button
                                 type="button"
                                 onClick={() => setShowPassword((prev) => !prev)}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted transition hover:text-foreground"
+                                className="cursor-pointer absolute right-4 top-1/2 -translate-y-1/2 text-muted transition hover:text-foreground"
                                 aria-label={showPassword ? "Hide password" : "Show password"}
                             >
                                 {showPassword ? (
@@ -110,11 +168,21 @@ const SignIn = () => {
 
                     {/* Sign In */}
                     <button
-                        type="button"
-                        className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand text-sm font-semibold text-brand-foreground transition hover:bg-brand-hover active:scale-[0.98]"
+                        type="submit"
+                        disabled={isLoading}
+                        className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand text-sm font-semibold text-brand-foreground transition hover:bg-brand-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                        Sign In
-                        <ArrowRight size={16} />
+                        {isLoading ? (
+                            <>
+                                <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                                Signing In...
+                            </>
+                        ) : (
+                            <>
+                                Sign In
+                                <ArrowRight size={16} />
+                            </>
+                        )}
                     </button>
 
                     {/* Google */}
@@ -130,7 +198,7 @@ const SignIn = () => {
                         />
                         Sign in with Google
                     </button>
-                        
+
 
                 </form>
 

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import SignIn from "./SignIn";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
     title: "Sign In | Mentor Lagbe",
@@ -7,7 +8,11 @@ export const metadata: Metadata = {
 };
 
 const SignInPage = () => {
-    return <SignIn />;
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <SignIn />
+        </Suspense>
+    );
 };
 
 export default SignInPage;
