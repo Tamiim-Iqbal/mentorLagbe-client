@@ -93,7 +93,7 @@ const DashboardSidebar = ({
 
                     {!collapsed && (
                         <h2 className="text-xl font-extrabold tracking-tight text-foreground">
-                            Mentor<span className="text-brand">Lagbe</span>
+                            <span className="text-brand">MentorLagbe</span>
                         </h2>
                     )}
                 </Link>
