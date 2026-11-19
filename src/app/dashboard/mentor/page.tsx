@@ -1,11 +1,10 @@
-export const instant = false
+
+import MentorDashboardClient from "./MentorDashboardClient";
+
+export const instant = false;
 
 const MentorDashboard = () => {
-    return (
-        <div>
-            Mentor Dashboard
-        </div>
-    );
+    return <MentorDashboardClient />;
 };
 
 export default MentorDashboard;

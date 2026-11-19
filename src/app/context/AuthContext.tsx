@@ -3,8 +3,12 @@
 import { createContext, useContext, type ReactNode } from "react";
 import { authClient } from "@/lib/auth-client";
 
+type AuthUser = typeof authClient.$Infer.Session.user & {
+  isPro?: boolean | null;
+};
+
 interface AuthContextType {
-  user: typeof authClient.$Infer.Session.user | null;
+  user: AuthUser | null;
   isPending: boolean;
   isAuthenticated: boolean;
 }
