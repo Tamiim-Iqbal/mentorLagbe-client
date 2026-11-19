@@ -1,11 +1,9 @@
 export const instant = false;
 
-const StudentDashboard = () => {
-    return (
-        <div>
-            Student Dashboard
-        </div>
-    );
+import StudentDashboardClient from "./StudentDashboardClient";
+
+const StudentDashboardPage = () => {
+    return <StudentDashboardClient />;
 };
 
-export default StudentDashboard;
+export default StudentDashboardPage;
