@@ -8,7 +8,8 @@ import {
     Menu,
     Sun,
     Moon,
-    ChevronRight,
+    LogIn,
+    UserRound,
 } from "lucide-react";
 
 import { dashboardHeaderTitles } from "./dashboard-config";
@@ -30,8 +31,7 @@ const Header = ({
 }: HeaderProps) => {
     const { theme, setTheme } = useTheme();
 
-    const name = user?.name?.trim() || "User";
-
+    const name = user?.name?.trim() || "";
     const initials = name
         .split(" ")
         .filter(Boolean)
@@ -44,7 +44,7 @@ const Header = ({
 
     const headerTitle =
         dashboardHeaderTitles[
-            role as keyof typeof dashboardHeaderTitles
+        role as keyof typeof dashboardHeaderTitles
         ] || "Dashboard";
 
     return (
@@ -63,7 +63,7 @@ const Header = ({
 
                     <div className="min-w-0">
                         <h1 className="mt-0.5 truncate text-lg font-extrabold tracking-tight text-foreground sm:text-xl">
-                            {headerTitle}
+                            {user ? headerTitle : "Please Login to access dashboard"}
                         </h1>
                     </div>
                 </div>
@@ -76,7 +76,7 @@ const Header = ({
                         onClick={() =>
                             setTheme(theme === "dark" ? "light" : "dark")
                         }
-                        className="flex h-10 w-10 items-center justify-center rounded-xl text-muted transition-all hover:bg-brand-tint hover:text-brand cursor-pointer"
+                        className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl text-muted transition-all hover:bg-brand-tint hover:text-brand"
                         aria-label="Toggle theme"
                     >
                         {theme === "dark" ? (
@@ -88,41 +88,62 @@ const Header = ({
 
                     <div className="hidden h-9 w-px bg-border sm:block" />
 
-                    {/* Clickable Profile */}
-                    <Link
-                        href={profileHref}
-                        title="Update Profile"
-                        className="group flex items-center gap-2.5 rounded-xl p-1.5 transition-colors hover:bg-accent sm:gap-3 sm:pl-2"
-                    >
-                        {/* Avatar */}
-                        <div className="relative shrink-0">
-                            {user?.image ? (
+                    {/* Logged-in Profile */}
+                    {user ? (
+                        <Link
+                            href={profileHref}
+                            title="Update Profile"
+                            className="group flex items-center gap-2.5 rounded-xl p-1.5 transition-colors hover:bg-accent sm:gap-3 sm:pl-2"
+                        >
+                            {user.image ? (
                                 <Image
                                     src={user.image}
-                                    alt={name}
+                                    alt={name || "Profile"}
                                     className="h-10 w-10 rounded-xl border border-border object-cover"
                                     height={40}
                                     width={40}
                                 />
-                            ) : (
-                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand text-xs font-bold text-white">
-                                    {initials || "U"}
+                            ) : initials ? (
+                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand/10 text-xs font-bold text-brand">
+                                    {initials}
+                                </div>
+                            ) : null}
+
+                            {name && (
+                                <div className="hidden min-w-0 text-left sm:block">
+                                    <p className="max-w-[150px] truncate text-xs font-bold text-foreground transition-colors group-hover:text-brand">
+                                        {name}
+                                    </p>
                                 </div>
                             )}
-                        </div>
+                        </Link>
+                    ) : (
+                        /* Not Logged In */
+                        <div className="flex items-center gap-2 rounded-xl border border-border bg-background/70 p-1.5 pl-2.5 sm:gap-3 sm:pl-3">
+                            <div className="hidden items-center gap-2 sm:flex">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand/10 text-brand">
+                                    <UserRound size={17} />
+                                </div>
 
-                        {/* User information */}
-                        <div className="hidden min-w-0 text-left sm:block">
-                            <p className="max-w-[150px] truncate text-xs font-bold text-foreground transition-colors group-hover:text-brand">
-                                {name}
-                            </p>
-                        </div>
+                                <div className="hidden text-left md:block">
+                                    <p className="text-[11px] font-bold text-foreground">
+                                        Welcome!
+                                    </p>
+                                    <p className="text-[10px] text-muted">
+                                        Login to your account
+                                    </p>
+                                </div>
+                            </div>
 
-                        <ChevronRight
-                            size={15}
-                            className="hidden text-muted transition-transform group-hover:translate-x-0.5 group-hover:text-brand sm:block"
-                        />
-                    </Link>
+                            <Link
+                                href="/sign-in"
+                                className="flex items-center gap-1.5 rounded-lg bg-brand px-3.5 py-2.5 text-xs font-bold text-white shadow-md shadow-brand/15 transition-all hover:bg-brand/90"
+                            >
+                                <LogIn size={15} />
+                                Login
+                            </Link>
+                        </div>
+                    )}
                 </div>
             </div>
         </header>
