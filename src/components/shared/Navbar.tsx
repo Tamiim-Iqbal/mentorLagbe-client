@@ -256,9 +256,15 @@ export default function Navbar() {
                   </div>
 
                   <div className="hidden text-left sm:block">
-                    <p className="max-w-[120px] truncate text-xs font-semibold text-foreground">
+                    <p className="max-w-30 truncate text-xs font-semibold text-foreground">
                       {user.name}
+                      {user.isPro === true && (
+                        <span className="ml-1.5 inline-flex items-center rounded-md bg-orange-500/10 px-1.5 py-0.5 text-[9px] font-extrabold text-orange-500">
+                          PRO
+                        </span>
+                      )}
                     </p>
+
                     <p className="text-[10px] capitalize text-muted">
                       {user.userRole || "Student"}
                     </p>
