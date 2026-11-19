@@ -135,15 +135,19 @@ const DashboardSidebar = ({
                                     </div>
                                 ) : null}
 
+                                {/* Pro Crown - Avatar Bottom Right */}
                                 {isPro && (
-                                    <span className="absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[27px] items-center justify-center rounded-md border-2 border-surface bg-orange-500 px-1 text-[8px] font-black tracking-wide text-white shadow-sm">
-                                        PRO
+                                    <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-surface bg-orange-500 text-white shadow-sm">
+                                        <Crown
+                                            size={11}
+                                            strokeWidth={2}
+                                        />
                                     </span>
                                 )}
                             </div>
                         )}
 
-                        {/* Name and badges */}
+                        {/* Name and Role */}
                         {!collapsed && (
                             <div className="min-w-0 flex-1">
                                 {name && (
@@ -152,9 +156,9 @@ const DashboardSidebar = ({
                                             {name}
                                         </p>
 
+                                        {/* Pro Badge */}
                                         {isPro && (
-                                            <span className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-orange-500/10 px-1.5 py-0.5 text-[9px] font-extrabold text-orange-500">
-                                                <Crown size={10} />
+                                            <span className="inline-flex shrink-0 items-center rounded-md bg-orange-500/10 px-1.5 py-0.5 text-[9px] font-extrabold text-orange-500">
                                                 PRO
                                             </span>
                                         )}
