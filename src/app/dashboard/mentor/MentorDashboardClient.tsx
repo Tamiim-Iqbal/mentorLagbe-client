@@ -450,11 +450,10 @@ const MentorDashboardClient = () => {
             <div
                 className={`overflow-hidden rounded-xl ${
                     isPro
-                        ? " bg-purple-500/3"
-                        : "border-border bg-surface"
+                        ? "bg-purple-500/3"
+                        : "border border-border bg-surface"
                 }`}
             >
-
                 {isPro ? (
                     <div className="flex flex-col justify-between gap-5 bg-purple-500/3 p-5 sm:flex-row sm:items-center">
 
@@ -488,45 +487,35 @@ const MentorDashboardClient = () => {
                         </div>
                     </div>
                 ) : (
-                    <div className="p-5">
+                    <div className="flex flex-col gap-5 p-5 lg:flex-row lg:items-center lg:gap-15">
 
-                        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
-
-                            <div className="flex items-start gap-3">
-                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-background text-muted">
-                                    <Sparkles size={23} />
-                                </div>
-
-                                <div>
-                                    <h2 className="font-semibold text-foreground">
-                                        Free Plan
-                                    </h2>
-
-                                    <p className="mt-1 max-w-xl text-sm leading-6 text-muted">
-                                        You can post up to{" "}
-                                        {FREE_TUITION_LIMIT} tuition listings
-                                        on the Free plan. Upgrade to Pro for
-                                        unlimited postings and a verified tutor
-                                        badge.
-                                    </p>
-                                </div>
+                        {/* Free Plan Information */}
+                        <div className="flex flex-1 items-start gap-3">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-background text-muted">
+                                <Sparkles size={23} />
                             </div>
 
-                            <Link
-                                href="/pricing"
-                                className="inline-flex w-fit shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground transition hover:bg-brand-hover"
-                            >
-                                <Crown size={16} />
-                                Upgrade Plan
-                                <ArrowRight size={15} />
-                            </Link>
+                            <div>
+                                <h2 className="font-semibold text-foreground">
+                                    Free Plan
+                                </h2>
+
+                                <p className="mt-1 max-w-xl text-sm leading-6 text-muted">
+                                    You can post up to{" "}
+                                    {FREE_TUITION_LIMIT} tuition listings
+                                    on the Free plan.
+                                    <br />
+                                    Upgrade to Pro for unlimited postings
+                                    and a verified tutor badge.
+                                </p>
+                            </div>
                         </div>
 
-                        {/* Free Plan Usage */}
-                        <div className="mt-5">
-                            <div className="mb-2 flex items-center justify-between gap-3">
-                                <p className="text-sm font-medium text-foreground">
-                                    Tuition Posting Limit
+                        {/* Compact Posting Limit */}
+                        <div className="w-full lg:w-44 lg:shrink-0">
+                            <div className="mb-2 flex items-center justify-between gap-2">
+                                <p className="text-xs font-medium text-foreground">
+                                    Posting Limit
                                 </p>
 
                                 <p className="text-xs font-semibold tabular-nums text-muted">
@@ -535,11 +524,11 @@ const MentorDashboardClient = () => {
                                         : `${Math.min(
                                             tuitions.length,
                                             FREE_TUITION_LIMIT
-                                        )} / ${FREE_TUITION_LIMIT} used`}
+                                        )} / ${FREE_TUITION_LIMIT}`}
                                 </p>
                             </div>
 
-                            <div className="flex h-2 overflow-hidden rounded-full bg-background">
+                            <div className="flex h-1.5 overflow-hidden rounded-full bg-background">
                                 <div
                                     className="rounded-full bg-brand transition-all duration-500"
                                     style={{
@@ -557,6 +546,16 @@ const MentorDashboardClient = () => {
                                 />
                             </div>
                         </div>
+
+                        {/* Upgrade Button */}
+                        <Link
+                            href="/pricing"
+                            className="inline-flex w-fit shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground transition hover:bg-brand-hover"
+                        >
+                            <Crown size={16} />
+                            Upgrade Plan
+                            <ArrowRight size={15} />
+                        </Link>
                     </div>
                 )}
             </div>
