@@ -217,7 +217,7 @@ const DashboardSidebar = ({
                             </p>
 
                             <Link
-                                href="/sign-in"
+                                href="/signin"
                                 onClick={onCloseMobile}
                                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-3 py-2.5 text-xs font-bold text-white shadow-md shadow-brand/15 transition-all hover:bg-brand/90"
                             >
