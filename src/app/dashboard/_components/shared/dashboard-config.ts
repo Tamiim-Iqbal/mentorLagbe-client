@@ -21,7 +21,7 @@ export const dashboardNavigation = {
     mentor: [
         { label: "Overview", href: "/dashboard/mentor", icon: LayoutDashboard },
         { label: "Post Tuition", href: "/dashboard/mentor/post-tuition", icon: Plus },
-        { label: "My Tuition", href: "/dashboard/mentor/my-tuition", icon: BookOpen },
+        { label: "My Tuitions", href: "/dashboard/mentor/my-tuitions", icon: BookOpen },
         { label: "Applicants", href: "/dashboard/mentor/applicants", icon: Users },
     ],
     admin: [
