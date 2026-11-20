@@ -1,11 +1,10 @@
-export const instant = false
+
+import PostTuitionForm from "./PostTuitionForm";
+
+export const instant = false;
 
 const PostTuition = () => {
-    return (
-        <div>
-            Post Tuition Page
-        </div>
-    );
+    return <PostTuitionForm />;
 };
 
 export default PostTuition;

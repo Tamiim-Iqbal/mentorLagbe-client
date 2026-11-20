@@ -1,0 +1,724 @@
+"use client";
+
+import Image from "next/image";
+import {
+    useRef,
+    useState,
+    type ChangeEvent,
+    type FormEvent,
+    type FocusEvent,
+} from "react";
+
+import {
+    Upload,
+    X,
+    LoaderCircle,
+    MapPin,
+    CheckCircle2,
+} from "lucide-react";
+
+import toast from "react-hot-toast";
+
+import { useAuth } from "@/app/context/AuthContext";
+
+import {
+    createTuition,
+    type TuitionFormData,
+} from "@/lib/actions/postTuition";
+
+import { uploadImage } from "@/lib/actions/uploadImage";
+
+/* ----------------------------------------
+   Options
+---------------------------------------- */
+
+const subjects = [
+    "C Programming",
+    "C++ Programming",
+    "Java Programming",
+    "Python Programming",
+    "Web Development",
+    "Database Management",
+    "Computer Science",
+    "Accounting",
+    "Economics",
+    "Mathematics",
+    "Physics",
+    "Chemistry",
+    "Biology",
+    "English",
+    "Bangla",
+    "ICT",
+    "Other",
+];
+
+const classLevels = [
+    "University",
+    "Admission",
+    "HSC",
+    "SSC",
+    "JSC",
+    "Other",
+];
+
+const daysOptions = [1, 2, 3, 4, 5, 6, 7];
+
+/* ----------------------------------------
+   Initial Form
+---------------------------------------- */
+
+const initialForm = {
+    title: "",
+    subject: "",
+    classLevel: "",
+    mode: "Online" as "Online" | "Offline",
+    location: "Online",
+    monthlyFee: "",
+    daysPerWeek: "3",
+    bannerImage: "",
+    description: "",
+};
+
+/* ----------------------------------------
+   Reusable Styles
+---------------------------------------- */
+
+const inputClass =
+    "w-full rounded-xl border border-border bg-brand/5 px-4 py-3 text-sm text-foreground placeholder:text-muted/70 transition-colors duration-200 outline-none focus:outline-none focus-visible:outline-none focus:border-brand focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0";
+
+const labelClass =
+    "mb-2 block text-sm font-medium text-foreground";
+
+/* ----------------------------------------
+   Component
+---------------------------------------- */
+
+const PostTuitionForm = () => {
+    const { user } = useAuth();
+
+    const imageInputRef = useRef<HTMLInputElement>(null);
+
+    const [form, setForm] = useState(initialForm);
+
+    const [uploading, setUploading] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+
+    /* ----------------------------------------
+       Direct Focus Handling
+    ---------------------------------------- */
+
+    const handleFieldFocus = (
+        event: FocusEvent<
+            HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+        >
+    ) => {
+        const element = event.currentTarget;
+
+        element.style.setProperty("outline", "none", "important");
+
+        element.style.setProperty(
+            "border-color",
+            "var(--brand)",
+            "important"
+        );
+
+        element.style.setProperty(
+            "box-shadow",
+            "0 0 0 3px color-mix(in srgb, var(--brand) 18%, transparent)",
+            "important"
+        );
+    };
+
+    const handleFieldBlur = (
+        event: FocusEvent<
+            HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+        >
+    ) => {
+        const element = event.currentTarget;
+
+        element.style.removeProperty("border-color");
+        element.style.removeProperty("box-shadow");
+
+        element.style.setProperty("outline", "none", "important");
+    };
+
+    /* ----------------------------------------
+       Form Validation
+    ---------------------------------------- */
+
+    const isFormValid =
+        form.title.trim().length > 0 &&
+        form.subject !== "" &&
+        form.classLevel !== "" &&
+        form.monthlyFee !== "" &&
+        Number(form.monthlyFee) > 0 &&
+        form.daysPerWeek !== "" &&
+        form.description.trim().length >= 10 &&
+        (
+            form.mode === "Online" ||
+            form.location.trim().length > 0
+        );
+
+    /* ----------------------------------------
+       Handle Input Changes
+    ---------------------------------------- */
+
+    const handleChange = (
+        event: ChangeEvent<
+            HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+        >
+    ) => {
+        const { name, value } = event.target;
+
+        setForm((prev) => ({
+            ...prev,
+            [name]: value,
+        }));
+    };
+
+    /* ----------------------------------------
+       Tuition Mode
+    ---------------------------------------- */
+
+    const handleModeChange = (mode: "Online" | "Offline") => {
+        setForm((prev) => ({
+            ...prev,
+            mode,
+            location: mode === "Online" ? "Online" : "",
+        }));
+    };
+
+    /* ----------------------------------------
+       Image Upload
+    ---------------------------------------- */
+
+    const handleImageUpload = async (
+        event: ChangeEvent<HTMLInputElement>
+    ) => {
+        const file = event.target.files?.[0];
+
+        if (!file) return;
+
+        setUploading(true);
+
+        try {
+            const imageUrl = await uploadImage(file);
+
+            setForm((prev) => ({
+                ...prev,
+                bannerImage: imageUrl,
+            }));
+
+            toast.success("Image uploaded successfully!");
+        } catch (error) {
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to upload image."
+            );
+        } finally {
+            setUploading(false);
+
+            if (imageInputRef.current) {
+                imageInputRef.current.value = "";
+            }
+        }
+    };
+
+    /* ----------------------------------------
+       Remove Image
+    ---------------------------------------- */
+
+    const removeImage = () => {
+        setForm((prev) => ({
+            ...prev,
+            bannerImage: "",
+        }));
+
+        if (imageInputRef.current) {
+            imageInputRef.current.value = "";
+        }
+    };
+
+    /* ----------------------------------------
+       Reset Form
+    ---------------------------------------- */
+
+    const resetForm = () => {
+        setForm(initialForm);
+
+        if (imageInputRef.current) {
+            imageInputRef.current.value = "";
+        }
+    };
+
+    /* ----------------------------------------
+       Submit Tuition
+    ---------------------------------------- */
+
+    const handleSubmit = async (
+        event: FormEvent<HTMLFormElement>
+    ) => {
+        event.preventDefault();
+
+        if (submitting || uploading) return;
+
+        if (!user?.email) {
+            toast.error("Please sign in before posting a tuition.");
+            return;
+        }
+
+        if (!isFormValid) {
+            toast.error("Please complete all required fields.");
+            return;
+        }
+
+        const tuitionData: TuitionFormData = {
+            title: form.title.trim(),
+            subject: form.subject,
+            classLevel: form.classLevel,
+            mode: form.mode,
+            location:
+                form.mode === "Online"
+                    ? "Online"
+                    : form.location.trim(),
+            monthlyFee: Number(form.monthlyFee),
+            daysPerWeek: Number(form.daysPerWeek),
+            bannerImage: form.bannerImage,
+            description: form.description.trim(),
+            tutorName: user.name || "Tutor",
+            tutorEmail: user.email,
+        };
+
+        setSubmitting(true);
+
+        try {
+            const result = await createTuition(tuitionData);
+
+            if (!result.insertedId) {
+                throw new Error(
+                    result.message || "Failed to create tuition."
+                );
+            }
+
+            resetForm();
+
+            toast.success(
+                "Tuition posted successfully! Your post is waiting for admin approval.",
+                {
+                    duration: 5000,
+                }
+            );
+        } catch (error) {
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : "Something went wrong. Please try again."
+            );
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    /* ----------------------------------------
+       JSX
+    ---------------------------------------- */
+
+    return (
+        <div className="max-w-5xl mx-auto">
+
+            {/* Page Heading */}
+
+            <div className="mb-6">
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                    Post a New Tuition
+                </h1>
+
+                <p className="mt-1 text-sm leading-relaxed text-muted">
+                    Fill in details about the subject, class level, mode,
+                    and fees. Tuitions will be reviewed by admin prior
+                    to publication.
+                </p>
+            </div>
+
+            {/* Form */}
+
+            <form
+                onSubmit={handleSubmit}
+                className="rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-8"
+            >
+                <div className="space-y-7">
+
+                    {/* Tuition Title */}
+
+                    <div>
+                        <label htmlFor="title" className={labelClass}>
+                            Tuition Title{" "}
+                            <span className="text-red-500">*</span>
+                        </label>
+
+                        <input
+                            id="title"
+                            name="title"
+                            type="text"
+                            required
+                            maxLength={120}
+                            value={form.title}
+                            onChange={handleChange}
+                            onFocus={handleFieldFocus}
+                            onBlur={handleFieldBlur}
+                            placeholder="e.g., Master AI Driven Web Development in 6 Months"
+                            className={inputClass}
+                        />
+                    </div>
+
+                    {/* Subject & Class Level */}
+
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+
+                        <div>
+                            <label htmlFor="subject" className={labelClass}>
+                                Subject{" "}
+                                <span className="text-red-500">*</span>
+                            </label>
+
+                            <select
+                                id="subject"
+                                name="subject"
+                                required
+                                value={form.subject}
+                                onChange={handleChange}
+                                onFocus={handleFieldFocus}
+                                onBlur={handleFieldBlur}
+                                className={inputClass}
+                            >
+                                <option value="" disabled>
+                                    Select subject
+                                </option>
+
+                                {subjects.map((subject) => (
+                                    <option key={subject} value={subject}>
+                                        {subject}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label htmlFor="classLevel" className={labelClass}>
+                                Class Level{" "}
+                                <span className="text-red-500">*</span>
+                            </label>
+
+                            <select
+                                id="classLevel"
+                                name="classLevel"
+                                required
+                                value={form.classLevel}
+                                onChange={handleChange}
+                                onFocus={handleFieldFocus}
+                                onBlur={handleFieldBlur}
+                                className={inputClass}
+                            >
+                                <option value="" disabled>
+                                    Select class level
+                                </option>
+
+                                {classLevels.map((level) => (
+                                    <option key={level} value={level}>
+                                        {level}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                    </div>
+
+                    {/* Tuition Mode */}
+
+                    <div>
+                        <label className={labelClass}>
+                            Tuition Mode{" "}
+                            <span className="text-red-500">*</span>
+                        </label>
+
+                        <div className="flex flex-wrap items-center gap-x-7 gap-y-3">
+
+                            {(["Online", "Offline"] as const).map((mode) => (
+                                <label
+                                    key={mode}
+                                    className="flex cursor-pointer items-center gap-2 text-sm text-foreground"
+                                >
+                                    <input
+                                        type="radio"
+                                        name="mode"
+                                        value={mode}
+                                        checked={form.mode === mode}
+                                        onChange={() => handleModeChange(mode)}
+                                        className="h-4 w-4 cursor-pointer accent-brand focus:outline-none focus:ring-0"
+                                    />
+
+                                    {mode === "Online"
+                                        ? "Online (Zoom / Meet)"
+                                        : "Offline (In-Person / Home Visit)"}
+                                </label>
+                            ))}
+
+                        </div>
+                    </div>
+
+                    {/* Offline Location */}
+
+                    {form.mode === "Offline" && (
+                        <div>
+                            <label htmlFor="location" className={labelClass}>
+                                Tuition Location{" "}
+                                <span className="text-red-500">*</span>
+                            </label>
+
+                            <div className="relative">
+                                <MapPin
+                                    size={17}
+                                    className="absolute left-4 top-1/2 -translate-y-1/2 text-muted"
+                                />
+
+                                <input
+                                    id="location"
+                                    name="location"
+                                    type="text"
+                                    required
+                                    value={form.location}
+                                    onChange={handleChange}
+                                    onFocus={handleFieldFocus}
+                                    onBlur={handleFieldBlur}
+                                    placeholder="e.g., Dhanmondi, Dhaka"
+                                    className={`${inputClass} pl-11`}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Monthly Fee & Days Per Week */}
+
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+
+                        <div>
+                            <label htmlFor="monthlyFee" className={labelClass}>
+                                Monthly Fee (৳ BDT){" "}
+                                <span className="text-red-500">*</span>
+                            </label>
+
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted">
+                                    ৳
+                                </span>
+
+                                <input
+                                    id="monthlyFee"
+                                    name="monthlyFee"
+                                    type="number"
+                                    min="1"
+                                    required
+                                    value={form.monthlyFee}
+                                    onChange={handleChange}
+                                    onFocus={handleFieldFocus}
+                                    onBlur={handleFieldBlur}
+                                    placeholder="e.g., 1500"
+                                    className={`${inputClass} pl-10`}
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label htmlFor="daysPerWeek" className={labelClass}>
+                                Days Per Week{" "}
+                                <span className="text-red-500">*</span>
+                            </label>
+
+                            <select
+                                id="daysPerWeek"
+                                name="daysPerWeek"
+                                required
+                                value={form.daysPerWeek}
+                                onChange={handleChange}
+                                onFocus={handleFieldFocus}
+                                onBlur={handleFieldBlur}
+                                className={inputClass}
+                            >
+                                {daysOptions.map((day) => (
+                                    <option key={day} value={day}>
+                                        {day} {day === 1 ? "day" : "days"} / week
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                    </div>
+
+                    {/* Banner Image */}
+
+                    <div>
+                        <label className={labelClass}>
+                            Banner Image
+                        </label>
+
+                        {form.bannerImage ? (
+                            <div className="relative w-full max-w-sm overflow-hidden rounded-xl border border-border">
+
+                                <Image
+                                    src={form.bannerImage}
+                                    alt="Tuition banner preview"
+                                    width={600}
+                                    height={300}
+                                    unoptimized
+                                    className="h-44 w-full object-cover"
+                                />
+
+                                <button
+                                    type="button"
+                                    onClick={removeImage}
+                                    className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-white transition hover:bg-red-500"
+                                    aria-label="Remove banner image"
+                                >
+                                    <X size={16} />
+                                </button>
+
+                                <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted">
+                                    <CheckCircle2
+                                        size={15}
+                                        className="text-brand"
+                                    />
+                                    Image uploaded successfully
+                                </div>
+                            </div>
+                        ) : (
+                            <div>
+                                <label
+                                    htmlFor="bannerImage"
+                                    className={`inline-flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-border bg-brand/5 px-5 py-3 text-sm font-medium text-foreground transition hover:border-brand hover:bg-brand/10 ${
+                                        uploading
+                                            ? "pointer-events-none opacity-60"
+                                            : ""
+                                    }`}
+                                >
+                                    {uploading ? (
+                                        <LoaderCircle
+                                            size={17}
+                                            className="animate-spin text-brand"
+                                        />
+                                    ) : (
+                                        <Upload
+                                            size={17}
+                                            className="text-brand"
+                                        />
+                                    )}
+
+                                    {uploading
+                                        ? "Uploading Image..."
+                                        : "Upload Image (ImgBB)"}
+                                </label>
+
+                                <input
+                                    ref={imageInputRef}
+                                    id="bannerImage"
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    onChange={handleImageUpload}
+                                    disabled={uploading}
+                                    className="hidden"
+                                />
+
+                                <p className="mt-2 text-xs text-muted">
+                                    JPG, PNG or WEBP. Maximum file size 5MB.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Description */}
+
+                    <div>
+                        <div className="mb-2 flex items-center justify-between gap-3">
+
+                            <label
+                                htmlFor="description"
+                                className="text-sm font-medium text-foreground"
+                            >
+                                Tuition Description{" "}
+                                <span className="text-red-500">*</span>
+                            </label>
+
+                            <span
+                                className={`text-xs ${
+                                    form.description.length < 10
+                                        ? "text-muted"
+                                        : "text-brand"
+                                }`}
+                            >
+                                {form.description.length} / min 10 chars
+                            </span>
+                        </div>
+
+                        <textarea
+                            id="description"
+                            name="description"
+                            required
+                            minLength={10}
+                            value={form.description}
+                            onChange={handleChange}
+                            onFocus={handleFieldFocus}
+                            onBlur={handleFieldBlur}
+                            rows={5}
+                            placeholder="Describe what students will learn, your teaching methodology, prerequisites, and expected outcomes..."
+                            className={`${inputClass} min-h-32 resize-y leading-relaxed`}
+                        />
+                    </div>
+
+                </div>
+
+                {/* Footer Actions */}
+
+                <div className="mt-7 flex flex-col-reverse justify-end gap-3 border-t border-border pt-5 sm:flex-row">
+
+                    <button
+                        type="button"
+                        onClick={resetForm}
+                        disabled={submitting || uploading}
+                        className="rounded-xl border border-border px-6 py-3 text-sm font-medium text-foreground transition hover:bg-brand/5 disabled:opacity-50 focus:outline-none"
+                    >
+                        Cancel
+                    </button>
+
+                    {/* Submit Button */}
+
+                    <button
+                        type="submit"
+                        disabled={!isFormValid || submitting || uploading}
+                        style={{
+                            opacity:
+                                isFormValid && !submitting && !uploading
+                                    ? 1
+                                    : 0.45,
+                        }}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-6 py-3 text-sm font-semibold text-brand-foreground transition-all duration-200 hover:bg-brand-hover disabled:cursor-not-allowed focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand cursor-pointer"
+                    >
+                        {submitting ? (
+                            <>
+                                <LoaderCircle
+                                    size={17}
+                                    className="animate-spin"
+                                />
+                                Submitting...
+                            </>
+                        ) : (
+                            "Submit Tuition Post"
+                        )}
+                    </button>
+
+                </div>
+            </form>
+        </div>
+    );
+};
+
+export default PostTuitionForm;
