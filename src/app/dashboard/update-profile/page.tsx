@@ -1,11 +1,10 @@
-export const instant = false
+import UpdateProfile from "./UpdateProfile";
 
-const UpdateProfile = () => {
-    return (
-        <div>
-            Update Profile Page
-        </div>
-    );
+
+export const instant = false;
+
+const UpdateProfilePage = () => {
+    return <UpdateProfile />;
 };
 
-export default UpdateProfile;
+export default UpdateProfilePage;

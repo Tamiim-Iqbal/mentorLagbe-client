@@ -3,18 +3,18 @@ import { MongoClient } from "mongodb";
 import { mongodbAdapter } from "@better-auth/mongo-adapter";
 
 const client = new MongoClient(process.env.MONGODB_URI as string);
-const db = client.db("mentorlagbe"); 
+const db = client.db("mentorlagbe");
 
 export const auth = betterAuth({
   database: mongodbAdapter(db, {
     client,
   }),
 
-  emailAndPassword: { 
-    enabled: true, 
+  emailAndPassword: {
+    enabled: true,
     minPasswordLength: 6,
     autoSignIn: false,
-  }, 
+  },
   user: {
     additionalFields: {
       userRole: {
@@ -24,17 +24,29 @@ export const auth = betterAuth({
         input: true,
       },
       isPro: {
-      type: "boolean",
-      required: false,
-      defaultValue: false,
-      input: false,
-    },
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+        input: false,
+      },
+      phone: {
+        type: "string",
+        required: false,
+        defaultValue: null,
+        input: false,
+      },
+      bio: {
+        type: "string",
+        required: false,
+        defaultValue: "",
+        input: false,
+      },
     },
   },
   socialProviders: {
-        google: { 
-            clientId: process.env.BETTER_AUTH_GOOGLE_CLIENT_ID as string, 
-            clientSecret: process.env.BETTER_AUTH_GOOGLE_CLIENT_SECRET as string, 
-        }, 
+    google: {
+      clientId: process.env.BETTER_AUTH_GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.BETTER_AUTH_GOOGLE_CLIENT_SECRET as string,
     },
+  },
 });
