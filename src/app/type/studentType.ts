@@ -2,9 +2,11 @@ import { ObjectId } from "mongodb";
 
 export interface IApplication {
     _id?: string;
+    tuitionId: ObjectId;
     tuitionTitle: string;
     subject: string;
     monthlyFee: number;
+    tutorName: string;
     tutorEmail: string;
 
     studentName: string;

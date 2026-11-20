@@ -1,11 +1,9 @@
-export const instant = false
+import MyApplicationsClient from "./MyApplicationsClient";
+
+export const instant = false;
 
 const MyApplicationPage = () => {
-    return (
-        <div>
-            My Applications Page
-        </div>
-    );
+    return <MyApplicationsClient />;
 };
 
 export default MyApplicationPage;
