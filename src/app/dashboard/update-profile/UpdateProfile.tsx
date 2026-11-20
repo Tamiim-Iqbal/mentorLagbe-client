@@ -12,6 +12,7 @@ import {
     Upload,
     Save,
     LoaderCircle,
+    Crown,
 } from "lucide-react";
 
 import { useAuth } from "@/app/context/AuthContext";
@@ -53,7 +54,6 @@ const UpdateProfile = () => {
         />
     );
 };
-
 
 // Profile Form Component
 const ProfileForm = ({
@@ -225,21 +225,36 @@ const ProfileForm = ({
                     <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
 
                         {/* Avatar */}
-                        <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand text-white shadow-sm ring-4 ring-brand/15">
+                        <div className="relative flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-brand text-white shadow-sm ring-4 ring-brand/15">
 
-                            {avatarSrc ? (
-                                <Image
-                                    src={avatarSrc}
-                                    alt={name || "User"}
-                                    fill
-                                    unoptimized
-                                    sizes="96px"
-                                    className="rounded-full object-cover"
-                                />
-                            ) : (
-                                <span className="select-none text-[40px] font-medium tracking-wide">
-                                    {initials || "U"}
-                                </span>
+                            {/* Avatar Image / Initials */}
+                            <div className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-full">
+                                {avatarSrc ? (
+                                    <Image
+                                        src={avatarSrc}
+                                        alt={name || "User"}
+                                        fill
+                                        unoptimized
+                                        sizes="96px"
+                                        className="rounded-full object-cover"
+                                    />
+                                ) : (
+                                    <span className="select-none text-[40px] font-medium tracking-wide">
+                                        {initials || "U"}
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Pro Badge */}
+                            {user.isPro && (
+                                <div className="absolute -bottom-1 -right-1 z-20 flex h-7 w-7 items-center justify-center rounded-full border-[3px] border-surface bg-orange-500 shadow-md">
+                                    <Crown
+                                        size={14}
+                                        fill="none"
+                                        stroke="#ffffff"
+                                        strokeWidth={2.5}
+                                    />
+                                </div>
                             )}
 
                         </div>
