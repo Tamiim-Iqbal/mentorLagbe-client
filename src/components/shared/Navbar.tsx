@@ -309,7 +309,7 @@ export default function Navbar() {
 
                     {/* Update Profile */}
                     <Link
-                      href="/dashboard/profile"
+                      href="/dashboard/update-profile"
                       prefetch={false}
                       onClick={closeMenus}
                       className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
