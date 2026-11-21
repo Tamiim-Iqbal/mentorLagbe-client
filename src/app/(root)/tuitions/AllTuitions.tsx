@@ -52,7 +52,7 @@ export default function AllTuitions() {
     // Tuition List Ref
     const tuitionListRef = useRef<HTMLElement>(null);
 
-    // Track whether pagination was clicked
+    // Pagination Scroll Control
     const shouldScrollToList = useRef(false);
 
     // Search
@@ -140,17 +140,7 @@ export default function AllTuitions() {
         currentPage * ITEMS_PER_PAGE
     );
 
-    // Reset page when filters change
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [
-        searchTerm,
-        selectedSubject,
-        selectedClass,
-        selectedMode,
-    ]);
-
-    // Scroll only after an actual pagination click
+    // Scroll only after pagination click
     useEffect(() => {
         if (!shouldScrollToList.current) return;
 
@@ -162,7 +152,7 @@ export default function AllTuitions() {
         });
     }, [currentPage]);
 
-    // Handle Pagination Click
+    // Handle Pagination
     const handlePageChange = (page: number) => {
         if (page === currentPage) return;
 
@@ -173,6 +163,8 @@ export default function AllTuitions() {
     // Search Submit
     const handleSearch = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+
+        setCurrentPage(1);
         setSearchTerm(searchInput.trim());
     };
 
@@ -331,9 +323,10 @@ export default function AllTuitions() {
 
                             <select
                                 value={selectedSubject}
-                                onChange={(e) =>
-                                    setSelectedSubject(e.target.value)
-                                }
+                                onChange={(e) => {
+                                    setSelectedSubject(e.target.value);
+                                    setCurrentPage(1);
+                                }}
                                 className={selectClassName}
                             >
                                 <option value="">All Subjects</option>
@@ -354,9 +347,10 @@ export default function AllTuitions() {
 
                             <select
                                 value={selectedClass}
-                                onChange={(e) =>
-                                    setSelectedClass(e.target.value)
-                                }
+                                onChange={(e) => {
+                                    setSelectedClass(e.target.value);
+                                    setCurrentPage(1);
+                                }}
                                 className={selectClassName}
                             >
                                 <option value="">All Class Levels</option>
@@ -377,9 +371,10 @@ export default function AllTuitions() {
 
                             <select
                                 value={selectedMode}
-                                onChange={(e) =>
-                                    setSelectedMode(e.target.value)
-                                }
+                                onChange={(e) => {
+                                    setSelectedMode(e.target.value);
+                                    setCurrentPage(1);
+                                }}
                                 className={selectClassName}
                             >
                                 <option value="">All Modes</option>
@@ -484,7 +479,13 @@ export default function AllTuitions() {
                             {paginatedTuitions.map((tuition) => (
                                 <TuitionCard
                                     key={tuition._id}
-                                    tuition={tuition}
+                                    tuition={{
+                                        ...tuition,
+                                        bannerImage: tuition.bannerImage || "",
+                                        approvalStatus: tuition.approvalStatus || "",
+                                        isActive: tuition.isActive ?? false,
+                                        createdAt: tuition.createdAt || "",
+                                    }}
                                 />
                             ))}
                         </div>
@@ -524,11 +525,10 @@ export default function AllTuitions() {
                                             onClick={() =>
                                                 handlePageChange(page)
                                             }
-                                            className={`h-10 min-w-10 cursor-pointer rounded-xl border px-3 text-sm font-semibold outline-none transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/20 ${
-                                                currentPage === page
-                                                    ? "border-brand bg-brand text-white"
-                                                    : "border-border bg-surface text-foreground hover:border-brand hover:text-brand"
-                                            }`}
+                                            className={`h-10 min-w-10 cursor-pointer rounded-xl border px-3 text-sm font-semibold outline-none transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/20 ${currentPage === page
+                                                ? "border-brand bg-brand text-white"
+                                                : "border-border bg-surface text-foreground hover:border-brand hover:text-brand"
+                                                }`}
                                         >
                                             {page}
                                         </button>
