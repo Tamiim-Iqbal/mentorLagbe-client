@@ -1,11 +1,7 @@
-import React from 'react';
+import AllTuitions from "./AllTuitions";
 
-const TuitionPage = () => {
-    return (
-        <div>
-            Tuition Page
-        </div>
-    );
-};
 
-export default TuitionPage;
+
+export default function TuitionPage() {
+    return <AllTuitions />;
+}
