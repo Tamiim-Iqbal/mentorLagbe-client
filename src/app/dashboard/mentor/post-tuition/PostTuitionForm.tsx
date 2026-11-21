@@ -1,13 +1,9 @@
+
 "use client";
 
 import Image from "next/image";
-import {
-    useRef,
-    useState,
-    type ChangeEvent,
-    type FormEvent,
-    type FocusEvent,
-} from "react";
+import Link from "next/link";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type FocusEvent } from "react";
 
 import {
     Upload,
@@ -15,6 +11,9 @@ import {
     LoaderCircle,
     MapPin,
     CheckCircle2,
+    Crown,
+    LockKeyhole,
+    ArrowRight,
 } from "lucide-react";
 
 import toast from "react-hot-toast";
@@ -23,8 +22,11 @@ import { useAuth } from "@/app/context/AuthContext";
 
 import {
     createTuition,
+    getTuitionLimit,
+    TuitionLimitResponse,
     type TuitionFormData,
 } from "@/lib/actions/postTuition";
+
 
 import { uploadImage } from "@/lib/actions/uploadImage";
 
@@ -94,7 +96,7 @@ const labelClass =
 ---------------------------------------- */
 
 const PostTuitionForm = () => {
-    const { user } = useAuth();
+    const { user, isPending } = useAuth();
 
     const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -102,6 +104,61 @@ const PostTuitionForm = () => {
 
     const [uploading, setUploading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+
+    // Tuition limit states
+    const [limitLoading, setLimitLoading] = useState(true);
+    const [tuitionLimit, setTuitionLimit] =
+        useState<TuitionLimitResponse | null>(null);
+
+    /* ----------------------------------------
+       Fetch Tuition Limit
+    ---------------------------------------- */
+
+    useEffect(() => {
+        if (isPending || !user?.email) return;
+
+        let isMounted = true;
+
+        const fetchLimit = async () => {
+            try {
+                const result = await getTuitionLimit(user.email);
+
+                if (isMounted) {
+                    setTuitionLimit(result);
+                }
+            } catch (error) {
+                if (isMounted) {
+                    console.error("Failed to fetch tuition limit:", error);
+                    toast.error("Failed to load tuition posting limit.");
+                }
+            } finally {
+                if (isMounted) {
+                    setLimitLoading(false);
+                }
+            }
+        };
+
+        fetchLimit();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [isPending, user?.email]);
+
+    /* ----------------------------------------
+       Refresh Tuition Limit
+    ---------------------------------------- */
+
+    const refreshTuitionLimit = async () => {
+        if (!user?.email) return;
+
+        try {
+            const result = await getTuitionLimit(user.email);
+            setTuitionLimit(result);
+        } catch (error) {
+            console.error("Failed to refresh tuition limit:", error);
+        }
+    };
 
     /* ----------------------------------------
        Direct Focus Handling
@@ -273,6 +330,18 @@ const PostTuitionForm = () => {
             return;
         }
 
+        // Frontend limit check
+        if (
+            tuitionLimit &&
+            !tuitionLimit.isPro &&
+            tuitionLimit.isLimitReached
+        ) {
+            toast.error(
+                "You have reached your free tuition posting limit. Upgrade to Pro."
+            );
+            return;
+        }
+
         const tuitionData: TuitionFormData = {
             title: form.title.trim(),
             subject: form.subject,
@@ -309,36 +378,166 @@ const PostTuitionForm = () => {
                     duration: 5000,
                 }
             );
+
+            // Refresh limit after successful creation.
+            // Refresh failure should not mark a successful post as failed.
+            await refreshTuitionLimit();
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
                     : "Something went wrong. Please try again."
             );
+
+            // Refresh limit in case the backend rejected the post
+            // because the user reached the limit.
+            await refreshTuitionLimit();
         } finally {
             setSubmitting(false);
         }
     };
 
     /* ----------------------------------------
+       Loading State
+    ---------------------------------------- */
+
+    if (
+        isPending ||
+        (user?.email && limitLoading)
+    ) {
+        return (
+            <div className="flex min-h-[400px] flex-col items-center justify-center gap-3">
+                <LoaderCircle
+                    size={32}
+                    className="animate-spin text-brand"
+                />
+
+                <p className="text-sm text-muted">
+                    Loading tuition posting information...
+                </p>
+            </div>
+        );
+    }
+
+    /* ----------------------------------------
+       Free User Limit Reached
+    ---------------------------------------- */
+
+    if (
+        tuitionLimit &&
+        !tuitionLimit.isPro &&
+        tuitionLimit.isLimitReached
+    ) {
+        return (
+            <div className="mx-auto max-w-3xl">
+                <div className="rounded-2xl border border-border bg-surface p-6 text-center shadow-sm sm:p-10">
+
+                    <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10">
+                        <LockKeyhole
+                            size={30}
+                            className="text-amber-500"
+                        />
+                    </div>
+
+                    <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                        Free Posting Limit Reached
+                    </h1>
+
+                    <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-muted">
+                        You have already used all your free tuition posts.
+                        Upgrade to Pro to post unlimited tuition listings.
+                    </p>
+
+                    <div className="mx-auto mt-7 max-w-sm rounded-xl border border-border bg-brand/5 p-5">
+
+                        <div className="mb-3 flex items-center justify-between text-sm">
+                            <span className="font-medium text-foreground">
+                                Free Posts Used
+                            </span>
+
+                            <span className="font-semibold text-foreground">
+                                {tuitionLimit.totalPosts} / {tuitionLimit.maxPosts}
+                            </span>
+                        </div>
+
+                        <div className="h-2.5 overflow-hidden rounded-full bg-border">
+                            <div
+                                className="h-full w-full rounded-full bg-amber-500"
+                            />
+                        </div>
+
+                        <p className="mt-3 text-xs text-muted">
+                            Upgrade your plan to remove this limit.
+                        </p>
+                    </div>
+
+                    <Link
+                        href="/pricing"
+                        className="mx-auto mt-7 inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-6 py-3 text-sm font-semibold text-brand-foreground transition hover:bg-brand-hover"
+                    >
+                        <Crown size={18} />
+                        Upgrade to Pro
+                        <ArrowRight size={17} />
+                    </Link>
+
+                    <p className="mt-4 text-xs text-muted">
+                        Already a Pro member? Please refresh your account.
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    /* ----------------------------------------
        JSX
     ---------------------------------------- */
 
     return (
-        <div className="max-w-5xl mx-auto">
+        <div className="mx-auto max-w-5xl">
 
             {/* Page Heading */}
 
             <div className="mb-6">
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                    Post a New Tuition
-                </h1>
+                <div className="flex flex-wrap items-center justify-between gap-3">
 
-                <p className="mt-1 text-sm leading-relaxed text-muted">
-                    Fill in details about the subject, class level, mode,
-                    and fees. Tuitions will be reviewed by admin prior
-                    to publication.
-                </p>
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                            Post a New Tuition
+                        </h1>
+
+                        <p className="mt-1 text-sm leading-relaxed text-muted">
+                            Fill in details about the subject, class level, mode,
+                            and fees. Tuitions will be reviewed by admin prior
+                            to publication.
+                        </p>
+                    </div>
+
+                    {/* Posting Usage */}
+
+                    {tuitionLimit && (
+                        <div
+                            className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium ${
+                                tuitionLimit.isPro
+                                    ? "border-brand/30 bg-brand/5 text-brand"
+                                    : "border-border bg-surface text-foreground"
+                            }`}
+                        >
+                            {tuitionLimit.isPro ? (
+                                <>
+                                    <Crown size={17} />
+                                    Pro Member
+                                </>
+                            ) : (
+                                <>
+                                    <span>
+                                        {tuitionLimit.totalPosts} / {tuitionLimit.maxPosts} Free Posts Used
+                                    </span>
+                                </>
+                            )}
+                        </div>
+                    )}
+
+                </div>
             </div>
 
             {/* Form */}
@@ -700,7 +899,7 @@ const PostTuitionForm = () => {
                                     ? 1
                                     : 0.45,
                         }}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-6 py-3 text-sm font-semibold text-brand-foreground transition-all duration-200 hover:bg-brand-hover disabled:cursor-not-allowed focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand cursor-pointer"
+                        className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand px-6 py-3 text-sm font-semibold text-brand-foreground transition-all duration-200 hover:bg-brand-hover disabled:cursor-not-allowed focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
                     >
                         {submitting ? (
                             <>

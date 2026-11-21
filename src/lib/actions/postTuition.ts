@@ -46,3 +46,40 @@ export const createTuition = async (
 
     return result;
 };
+
+
+
+
+export interface TuitionLimitResponse {
+    success: boolean;
+    totalPosts: number;
+    maxPosts: number | null;
+    isLimitReached: boolean;
+    isPro: boolean;
+}
+
+// Get user's tuition posting limit
+export const getTuitionLimit = async (
+    tutorEmail: string
+): Promise<TuitionLimitResponse> => {
+    if (!BASE_URL) {
+        throw new Error("API base URL is not configured.");
+    }
+
+    const res = await fetch(
+        `${BASE_URL}/tuitions/limit/${encodeURIComponent(tutorEmail)}`,
+        {
+            cache: "no-store",
+        }
+    );
+
+    const result = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+        throw new Error(
+            result.message || "Failed to fetch tuition limit."
+        );
+    }
+
+    return result;
+};
