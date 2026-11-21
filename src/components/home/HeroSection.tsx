@@ -45,7 +45,7 @@ const HeroSection = () => {
         if (!container) return;
 
         container.scrollBy({
-            left: direction === "left" ? -350 : 350,
+            left: direction === "left" ? -650 : 650,
             behavior: "smooth",
         });
 
