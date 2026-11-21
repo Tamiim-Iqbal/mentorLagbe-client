@@ -12,7 +12,9 @@ import {
     BookOpen,
     Globe,
     MapPin,
-    Circle,
+    CheckCircle2,
+    XCircle,
+    Clock3,
     Power,
 } from "lucide-react";
 
@@ -20,6 +22,8 @@ import { useAuth } from "@/app/context/AuthContext";
 import NoUserState from "../../_components/NoUserState";
 import { getMyTuitions } from "@/lib/api/myTuitions";
 import Image from "next/image";
+
+type ApprovalStatus = "pending" | "approved" | "rejected";
 
 interface Tuition {
     _id?: string;
@@ -31,7 +35,7 @@ interface Tuition {
     location?: string;
     monthlyFee: number;
     bannerImage: string;
-    approvalStatus: "pending" | "approved";
+    approvalStatus: ApprovalStatus;
     isActive: boolean;
 }
 
@@ -84,18 +88,66 @@ const MyTuitionClient = () => {
         };
     }, [user?.email, isAuthPending]);
 
-    // Toggle Active Status (Frontend Only)
-    const handleToggleActive = (id: string) => {
-        setTuitions((prev) =>
-            prev.map((tuition) =>
-                (tuition._id || tuition.id) === id
-                    ? {
-                        ...tuition,
-                        isActive: !tuition.isActive,
-                    }
-                    : tuition
-            )
+    // Toggle Active Status - UI Only
+    const handleToggleActive = (tuitionId: string) => {
+        setTuitions((previousTuitions) =>
+            previousTuitions.map((tuition) => {
+                const currentId = tuition._id || tuition.id || "";
+
+                if (currentId !== tuitionId) return tuition;
+
+                return {
+                    ...tuition,
+                    isActive: !tuition.isActive,
+                };
+            })
         );
+    };
+
+    // Approval Status Icon
+    const getApprovalStatusIcon = (status: ApprovalStatus) => {
+        switch (status) {
+            case "approved":
+                return (
+                    <CheckCircle2
+                        size={14}
+                        className="shrink-0"
+                        strokeWidth={2.5}
+                    />
+                );
+
+            case "rejected":
+                return (
+                    <XCircle
+                        size={14}
+                        className="shrink-0"
+                        strokeWidth={2.5}
+                    />
+                );
+
+            default:
+                return (
+                    <Clock3
+                        size={14}
+                        className="shrink-0"
+                        strokeWidth={2.5}
+                    />
+                );
+        }
+    };
+
+    // Approval Status Style
+    const getApprovalStatusStyle = (status: ApprovalStatus) => {
+        switch (status) {
+            case "approved":
+                return "bg-brand/10 text-brand";
+
+            case "rejected":
+                return "bg-red-500/10 text-red-500";
+
+            default:
+                return "bg-amber-500/10 text-amber-600 dark:text-amber-400";
+        }
     };
 
     // Authentication Loading
@@ -221,6 +273,9 @@ const MyTuitionClient = () => {
                                     const tuitionId =
                                         tuition._id || tuition.id || "";
 
+                                    const approvalStatus =
+                                        tuition.approvalStatus || "pending";
+
                                     return (
                                         <tr
                                             key={tuitionId}
@@ -236,8 +291,8 @@ const MyTuitionClient = () => {
                                                                 src={tuition.bannerImage}
                                                                 alt={tuition.title}
                                                                 className="h-full w-full object-cover"
-                                                                height={20}
-                                                                width={20}
+                                                                height={48}
+                                                                width={48}
                                                             />
                                                         ) : (
                                                             <BookOpen
@@ -249,7 +304,7 @@ const MyTuitionClient = () => {
 
                                                     {/* Title + Online / Location */}
                                                     <div className="min-w-0 flex-1 space-y-1">
-                                                        <p className="w-full max-w-[360px] cursor-pointer truncate text-sm font-semibold text-foreground transition-colors duration-200 hover:text-brand">
+                                                        <p className="w-full max-w-[360px] truncate text-sm font-semibold text-foreground transition-colors duration-200 hover:text-brand">
                                                             {tuition.title}
                                                         </p>
 
@@ -270,7 +325,8 @@ const MyTuitionClient = () => {
                                                                     strokeWidth={2}
                                                                 />
                                                                 <span className="truncate">
-                                                                    {tuition.location || "Location not specified"}
+                                                                    {tuition.location ||
+                                                                        "Location not specified"}
                                                                 </span>
                                                             </div>
                                                         )}
@@ -308,28 +364,23 @@ const MyTuitionClient = () => {
                                             {/* Approval Status */}
                                             <td className="px-2 py-4">
                                                 <span
-                                                    className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-1 text-xs font-semibold ${tuition.approvalStatus === "approved"
-                                                        ? "bg-brand/10 text-brand"
-                                                        : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                                                        }`}
+                                                    className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-1 text-xs font-semibold ${getApprovalStatusStyle(
+                                                        approvalStatus
+                                                    )}`}
                                                 >
-                                                    <Circle
-                                                        size={7}
-                                                        fill="currentColor"
-                                                        strokeWidth={0}
-                                                    />
+                                                    {getApprovalStatusIcon(
+                                                        approvalStatus
+                                                    )}
 
-                                                    {tuition.approvalStatus
-                                                        ?.charAt(0)
+                                                    {approvalStatus
+                                                        .charAt(0)
                                                         .toUpperCase() +
-                                                        tuition.approvalStatus?.slice(
-                                                            1
-                                                        )}
+                                                        approvalStatus.slice(1)}
                                                 </span>
                                             </td>
 
-                                            {/* Active Status */}
-                                            <td className="px-2 py-4">
+                                            {/* Active Status - UI Toggle */}
+                                            <td className="py-4 pl-2 pr-3">
                                                 <button
                                                     type="button"
                                                     onClick={() =>
@@ -337,17 +388,20 @@ const MyTuitionClient = () => {
                                                             tuitionId
                                                         )
                                                     }
-                                                    aria-label={`${tuition.isActive
-                                                        ? "Close"
-                                                        : "Activate"
-                                                        } ${tuition.title}`}
-                                                    className={`inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-1 text-xs font-semibold transition ${tuition.isActive
-                                                        ? "bg-brand/10 text-brand hover:bg-brand/15"
-                                                        : "bg-red-500/10 text-red-500 hover:bg-red-500/15"
-                                                        }`}
+                                                    aria-label={`Change status to ${
+                                                        tuition.isActive
+                                                            ? "Closed"
+                                                            : "Active"
+                                                    }`}
+                                                    aria-pressed={tuition.isActive}
+                                                    className={`inline-flex cursor-pointer items-center gap-1 whitespace-nowrap rounded-full pl-2.5 pr-3 py-1.5 text-xs! font-semibold! transition ${
+                                                        tuition.isActive
+                                                            ? "bg-brand/10 text-brand hover:bg-brand/20"
+                                                            : "bg-background text-muted hover:bg-muted/10 hover:text-foreground"
+                                                    }`}
                                                 >
                                                     <Power
-                                                        size={13}
+                                                        size={12}
                                                         strokeWidth={2.5}
                                                     />
 
@@ -357,7 +411,7 @@ const MyTuitionClient = () => {
                                                 </button>
                                             </td>
 
-                                            {/* Actions */}
+                                            {/* Actions - UI Only */}
                                             <td className="px-2 py-4">
                                                 <div className="flex items-center justify-center gap-1">
                                                     <button
