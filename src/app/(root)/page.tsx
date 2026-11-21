@@ -2,6 +2,7 @@ import HeroSection from "@/components/home/HeroSection";
 import HowItWorks from "@/components/home/HowItWorks";
 import JoinMentorLagbe from "@/components/home/JoinMentorLagbe";
 import LatestTuitions from "@/components/home/LatestTuitions";
+import Pricing from "@/components/home/Pricing";
 import Image from "next/image";
 
 export default function Home() {
@@ -10,6 +11,7 @@ export default function Home() {
       <HeroSection />
       <LatestTuitions />
       <HowItWorks />
+      <Pricing />
       <JoinMentorLagbe />
     </>
   );
