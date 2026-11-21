@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -8,14 +9,21 @@ import {
     Clock,
     CalendarDays,
     Users,
-    Circle,
     Check,
     X,
+    CheckCircle,
+    XCircle,
+    Clock3,
 } from "lucide-react";
+
+import toast from "react-hot-toast";
 
 import { useAuth } from "@/app/context/AuthContext";
 import NoUserState from "../../_components/NoUserState";
 import { getMyApplicants } from "@/lib/api/myApplicants";
+import { updateApplicantStatus } from "@/lib/updates/mentorApplicants";
+
+type ApplicantStatus = "pending" | "accepted" | "rejected";
 
 interface Applicant {
     _id?: string;
@@ -29,7 +37,7 @@ interface Applicant {
     studentPhone: string;
     preferredSchedule: string;
     studentNote?: string;
-    status: "pending" | "accepted" | "rejected";
+    status: ApplicantStatus;
     appliedAt: string | { $date: string };
 }
 
@@ -39,6 +47,9 @@ const ApplicantsClient = () => {
     const [applicants, setApplicants] = useState<Applicant[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
+
+    const [updatingApplicantId, setUpdatingApplicantId] =
+        useState<string | null>(null);
 
     // Format Applied Date
     const formatDate = (date: Applicant["appliedAt"]) => {
@@ -80,9 +91,10 @@ const ApplicantsClient = () => {
 
         const fetchApplicants = async () => {
             try {
-                const data = await getMyApplicants(user.email);
+                setIsLoading(true);
+                setError("");
 
-                console.log("My Applicants:", data);
+                const data = await getMyApplicants(user.email);
 
                 const applicantData: Applicant[] = Array.isArray(data)
                     ? data
@@ -114,18 +126,59 @@ const ApplicantsClient = () => {
         };
     }, [user?.email, isAuthPending]);
 
-    // Update Applicant Status (Frontend Only)
-    const handleStatusChange = (
+    // Update Applicant Status
+    const handleStatusChange = async (
         applicantId: string,
         status: "accepted" | "rejected"
     ) => {
-        setApplicants((prev) =>
-            prev.map((applicant) =>
-                (applicant._id || applicant.id) === applicantId
-                    ? { ...applicant, status }
-                    : applicant
-            )
-        );
+        if (!user?.email) {
+            toast.error("Please sign in to manage applicants.");
+            return;
+        }
+
+        if (updatingApplicantId) return;
+
+        try {
+            setUpdatingApplicantId(applicantId);
+
+            const result = await updateApplicantStatus(
+                applicantId,
+                status,
+                user.email
+            );
+
+            if (!result.success || !result.status) {
+                throw new Error(
+                    result.message || "Failed to update application status."
+                );
+            }
+
+            // Update UI only after backend success
+            setApplicants((previous) =>
+                previous.map((applicant) =>
+                    (applicant._id || applicant.id) === applicantId
+                        ? {
+                            ...applicant,
+                            status: result.status!,
+                        }
+                        : applicant
+                )
+            );
+
+            toast.success(
+                result.message || `Application ${status} successfully.`
+            );
+        } catch (error) {
+            console.error("Failed to update applicant status:", error);
+
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to update application status."
+            );
+        } finally {
+            setUpdatingApplicantId(null);
+        }
     };
 
     // Authentication Loading
@@ -243,6 +296,12 @@ const ApplicantsClient = () => {
                                         applicant.id ||
                                         `${applicant.studentEmail}-${index}`;
 
+                                    const isUpdating =
+                                        updatingApplicantId === applicantId;
+
+                                    const hasValidId =
+                                        Boolean(applicant._id || applicant.id);
+
                                     return (
                                         <tr
                                             key={applicantId}
@@ -251,7 +310,6 @@ const ApplicantsClient = () => {
                                             {/* Student */}
                                             <td className="px-4 py-4">
                                                 <div className="flex min-w-0 items-center gap-2.5">
-                                                    {/* Avatar */}
                                                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-bold text-white">
                                                         {getInitials(
                                                             applicant.studentName
@@ -356,24 +414,37 @@ const ApplicantsClient = () => {
                                             {/* Status */}
                                             <td className="px-3 py-4">
                                                 <span
-                                                    className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${applicant.status === "accepted"
-                                                        ? "bg-brand/10 text-brand"
-                                                        : applicant.status === "rejected"
-                                                            ? "bg-red-500/10 text-red-500"
-                                                            : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                                                        }`}
+                                                    className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${
+                                                        applicant.status === "accepted"
+                                                            ? "bg-brand/10 text-brand"
+                                                            : applicant.status === "rejected"
+                                                                ? "bg-red-500/10 text-red-500"
+                                                                : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                                    }`}
                                                 >
-                                                    <Circle
-                                                        size={7}
-                                                        fill="currentColor"
-                                                        strokeWidth={0}
-                                                    />
+                                                    {applicant.status === "accepted" ? (
+                                                        <CheckCircle
+                                                            size={14}
+                                                            className="shrink-0"
+                                                            strokeWidth={2.5}
+                                                        />
+                                                    ) : applicant.status === "rejected" ? (
+                                                        <XCircle
+                                                            size={14}
+                                                            className="shrink-0"
+                                                            strokeWidth={2.5}
+                                                        />
+                                                    ) : (
+                                                        <Clock3
+                                                            size={14}
+                                                            className="shrink-0"
+                                                            strokeWidth={2.5}
+                                                        />
+                                                    )}
 
-                                                    {applicant.status === "accepted"
-                                                        ? "Accepted"
-                                                        : applicant.status
-                                                            ?.charAt(0)
-                                                            .toUpperCase() +
+                                                    {applicant.status
+                                                        ?.charAt(0)
+                                                        .toUpperCase() +
                                                         applicant.status?.slice(1)}
                                                 </span>
                                             </td>
@@ -385,29 +456,54 @@ const ApplicantsClient = () => {
                                                         <>
                                                             <button
                                                                 type="button"
+                                                                disabled={
+                                                                    isUpdating ||
+                                                                    Boolean(updatingApplicantId) ||
+                                                                    !hasValidId
+                                                                }
                                                                 onClick={() =>
                                                                     handleStatusChange(
                                                                         applicantId,
                                                                         "accepted"
                                                                     )
                                                                 }
-                                                                className="inline-flex w-22 cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-brand px-2.5 py-1.5 text-xs font-semibold text-brand-foreground transition hover:bg-brand-hover"
+                                                                className="inline-flex w-22 cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-brand px-2.5 py-1 text-xs font-semibold text-brand-foreground transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
                                                             >
-                                                                <Check size={13} />
+                                                                {isUpdating ? (
+                                                                    <LoaderCircle
+                                                                        size={16}
+                                                                        className="animate-spin"
+                                                                    />
+                                                                ) : (
+                                                                    <Check
+                                                                        size={11}
+                                                                        strokeWidth={3}
+                                                                        className="shrink-0"
+                                                                    />
+                                                                )}
+
                                                                 Accept
                                                             </button>
 
                                                             <button
                                                                 type="button"
+                                                                disabled={
+                                                                    isUpdating ||
+                                                                    Boolean(updatingApplicantId) ||
+                                                                    !hasValidId
+                                                                }
                                                                 onClick={() =>
                                                                     handleStatusChange(
                                                                         applicantId,
                                                                         "rejected"
                                                                     )
                                                                 }
-                                                                className="inline-flex w-22 cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-red-500/10 px-2.5 py-1.5 text-xs font-semibold text-red-500 transition hover:bg-red-500/15"
+                                                                className="inline-flex w-22 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-red-500! bg-transparent px-2.5 py-1 text-xs font-semibold text-red-500 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
                                                             >
-                                                                <X size={13} />
+                                                                <X
+                                                                    size={16}
+                                                                    strokeWidth={2.2}
+                                                                />
                                                                 Reject
                                                             </button>
                                                         </>
