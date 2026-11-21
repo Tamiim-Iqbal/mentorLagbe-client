@@ -95,7 +95,7 @@ const HeroSection = () => {
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
-        router.push("/browse-tuitions");
+        router.push("/tuitions");
     };
 
     const scrollSubjects = (direction: "left" | "right") => {
@@ -259,7 +259,7 @@ const HeroSection = () => {
                             {subjects.map(({ name, icon: Icon }, index) => (
                                 <Link
                                     key={name}
-                                    href="/browse-tuitions"
+                                    href="/tuitions"
                                     className="hero-chip group flex h-11 shrink-0 items-center gap-2.5 rounded-2xl border border-transparent! bg-surface py-1 pl-1.5 pr-4 text-sm font-semibold text-foreground shadow-sm transition-all duration-200 hover:scale-[1.03] hover:border-brand/30! hover:text-brand hover:shadow-md sm:h-12 sm:text-base"
                                     style={{
                                         animationDelay: `${900 + index * 60}ms`,
