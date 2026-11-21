@@ -1,8 +1,12 @@
+
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Plus_Jakarta_Sans } from "next/font/google";
+
 import "./globals.css";
+
 import ThemeProvider from "@/components/theme/ThemeProvider";
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -14,7 +18,8 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
     title: "Mentor Lagbe",
-    description: "Find the right mentor and start your learning journey with MentorLagbe.",
+    description:
+        "Find the right mentor and start your learning journey with MentorLagbe.",
 };
 
 export default function RootLayout({
@@ -28,12 +33,15 @@ export default function RootLayout({
             suppressHydrationWarning
             className={`${plusJakartaSans.variable} h-full antialiased`}
         >
-            <body className="min-h-full flex flex-col">
-                <AuthProvider>
-                    <ThemeProvider>
-                        {children}
-                    </ThemeProvider>
-                </AuthProvider>
+            <body className="flex min-h-full flex-col">
+                <Suspense fallback={null}>
+                    <AuthProvider>
+                        <ThemeProvider>
+                            {children}
+                        </ThemeProvider>
+                    </AuthProvider>
+                </Suspense>
+
                 <Toaster />
             </body>
         </html>
