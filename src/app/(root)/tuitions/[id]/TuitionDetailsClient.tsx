@@ -33,33 +33,40 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
     const [isSaved, setIsSaved] = useState(false);
 
     useEffect(() => {
-    const fetchTuitionDetails = async () => {
-        try {
-            setLoading(true);
-            setError("");
+        const fetchTuitionDetails = async () => {
+            try {
+                setLoading(true);
+                setError("");
 
-            const data: Tuition = await getTuitionDetails(id);
+                const data: Tuition = await getTuitionDetails(id);
 
-            setTuition(data);
-        } catch (err) {
-            console.error("Error fetching tuition details:", err);
+                setTuition(data);
+            } catch (err) {
+                console.error("Error fetching tuition details:", err);
 
-            if (err instanceof Error && err.message.includes("(404)")) {
-                setError("This tuition is no longer available.");
-            } else {
-                setError(
-                    err instanceof Error
-                        ? err.message
-                        : "Something went wrong."
-                );
+                if (err instanceof Error && err.message.includes("(404)")) {
+                    setError("This tuition is no longer available.");
+                } else {
+                    setError(
+                        err instanceof Error
+                            ? err.message
+                            : "Something went wrong."
+                    );
+                }
+            } finally {
+                setLoading(false);
             }
-        } finally {
-            setLoading(false);
-        }
-    };
+        };
 
-    fetchTuitionDetails();
-}, [id]);
+        fetchTuitionDetails();
+    }, [id]);
+    
+    // Scroll to top after tuition details load
+    useEffect(() => {
+        if (!loading) {
+            window.scrollTo(0, 0);
+        }
+    }, [loading]);
 
     // Loading State
     if (loading) {
@@ -128,10 +135,10 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
 
     const postedDate = createdAt
         ? new Date(createdAt).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-          })
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+        })
         : "Recently";
 
     const isApplyDisabled = isAuthPending || !isAuthenticated;
@@ -192,11 +199,10 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
                                         : "Bookmark tuition"
                                 }
                                 aria-pressed={isSaved}
-                                className={`absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full shadow-md backdrop-blur-md transition-all duration-200 hover:scale-110 ${
-                                    isSaved
+                                className={`absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full shadow-md backdrop-blur-md transition-all duration-200 hover:scale-110 ${isSaved
                                         ? "bg-brand text-white"
                                         : "bg-white/95 text-slate-700 hover:bg-brand hover:text-white"
-                                }`}
+                                    }`}
                             >
                                 <Bookmark
                                     size={18}
@@ -337,11 +343,10 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
                                             Mode
                                         </span>
                                         <span
-                                            className={`font-semibold ${
-                                                mode === "Online"
+                                            className={`font-semibold ${mode === "Online"
                                                     ? "text-brand"
                                                     : "text-orange-500"
-                                            }`}
+                                                }`}
                                         >
                                             {mode}
                                         </span>
@@ -405,11 +410,10 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
                             <button
                                 type="button"
                                 disabled={isApplyDisabled}
-                                className={`mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-all duration-200 ${
-                                    isApplyDisabled
+                                className={`mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-all duration-200 ${isApplyDisabled
                                         ? "cursor-not-allowed bg-brand/65 text-white/90"
                                         : "cursor-pointer bg-brand text-white hover:bg-brand-hover hover:shadow-lg hover:shadow-brand/20"
-                                }`}
+                                    }`}
                             >
                                 {isAuthPending
                                     ? "Checking Account..."
