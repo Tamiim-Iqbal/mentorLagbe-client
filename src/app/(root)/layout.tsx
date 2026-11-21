@@ -1,14 +1,19 @@
+
 import Footer from '@/components/shared/Footer';
 import Navbar from '@/components/shared/Navbar';
 import React from 'react';
 
-const RootLayout = ({children}: {children: React.ReactNode}) => {
+const RootLayout = ({ children }: { children: React.ReactNode }) => {
     return (
-        <>
-        <Navbar />
-        {children}
-        <Footer />
-        </>
+        <div className="flex min-h-screen flex-col">
+            <Navbar />
+
+            <main className="flex-1">
+                {children}
+            </main>
+
+            <Footer />
+        </div>
     );
 };
 
