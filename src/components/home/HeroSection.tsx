@@ -230,7 +230,7 @@ const HeroSection = () => {
 
                 {/* Subjects */}
                 <div {...reveal(700, "mx-auto mt-7 max-w-5xl sm:mt-8")}>
-                    <div className="flex items-center gap-2 rounded-[28px] border border-brand/10! bg-brand-tint py-3 pl-3 pr-3 shadow-sm sm:gap-3 sm:py-4 sm:pl-4 sm:pr-4">
+                    <div className="flex items-center gap-2 rounded-[28px] border border-brand/10! bg-surface/80 py-3 pl-3 pr-3 shadow-sm sm:gap-3 sm:py-4 sm:pl-4 sm:pr-4">
 
                         {/* Left Button */}
                         {canScrollLeft && (
