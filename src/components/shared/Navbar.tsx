@@ -50,7 +50,7 @@ function NavbarContent() {
 
     // Hydration Safe
     const mounted = useSyncExternalStore(
-        () => () => {},
+        () => () => { },
         () => true,
         () => false
     );
@@ -151,9 +151,8 @@ function NavbarContent() {
 
     return (
         <header
-            className={`sticky top-0 z-50 bg-(--nav-background) backdrop-blur-xl ${
-                isScrolled ? "border-b border-border" : "border-b-0"
-            } transition-all duration-300`}
+            className={`sticky top-0 z-50 bg-(--nav-background) backdrop-blur-xl ${isScrolled ? "border-b border-border" : "border-b-0"
+                } transition-all duration-300`}
         >
             <div className="mx-auto w-[80%]">
                 <nav className="relative flex h-16 items-center justify-between">
@@ -162,7 +161,19 @@ function NavbarContent() {
                     <Link
                         href="/"
                         prefetch={false}
-                        onClick={closeMenus}
+                        onClick={(e) => {
+                            closeMenus();
+
+                            if (window.location.pathname === "/") {
+                                e.preventDefault();
+
+                                window.scrollTo({
+                                    top: 0,
+                                    left: 0,
+                                    behavior: "smooth",
+                                });
+                            }
+                        }}
                         className="group flex items-center gap-2.5"
                     >
                         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-brand-foreground shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:rotate-[-5deg]">
@@ -185,20 +196,18 @@ function NavbarContent() {
                                     href={item.href}
                                     prefetch={false}
                                     aria-current={isActive ? "page" : undefined}
-                                    className={`group relative rounded-xl px-3.5 py-2 text-sm font-medium transition-colors duration-200 ${
-                                        isActive
+                                    className={`group relative rounded-xl px-3.5 py-2 text-sm font-medium transition-colors duration-200 ${isActive
                                             ? "text-brand"
                                             : "text-muted hover:text-foreground"
-                                    }`}
+                                        }`}
                                 >
                                     {item.label}
 
                                     <span
-                                        className={`absolute bottom-1 left-3.5 right-3.5 h-[2px] origin-left rounded-full bg-brand transition-transform duration-300 ease-out ${
-                                            isActive
+                                        className={`absolute bottom-1 left-3.5 right-3.5 h-[2px] origin-left rounded-full bg-brand transition-transform duration-300 ease-out ${isActive
                                                 ? "scale-x-100"
                                                 : "scale-x-0 group-hover:scale-x-100"
-                                        }`}
+                                            }`}
                                     />
                                 </Link>
                             );
@@ -273,9 +282,8 @@ function NavbarContent() {
                                     </div>
 
                                     <ChevronDown
-                                        className={`h-3.5 w-3.5 text-muted transition-transform duration-200 sm:h-4 sm:w-4 ${
-                                            isProfileOpen ? "rotate-180" : ""
-                                        }`}
+                                        className={`h-3.5 w-3.5 text-muted transition-transform duration-200 sm:h-4 sm:w-4 ${isProfileOpen ? "rotate-180" : ""
+                                            }`}
                                     />
                                 </button>
 
@@ -380,11 +388,10 @@ function NavbarContent() {
 
             {/* Mobile Navigation */}
             <div
-                className={`grid transition-all duration-300 ease-in-out md:hidden ${
-                    isMobileMenuOpen
+                className={`grid transition-all duration-300 ease-in-out md:hidden ${isMobileMenuOpen
                         ? "grid-rows-[1fr] opacity-100"
                         : "grid-rows-[0fr] opacity-0"
-                }`}
+                    }`}
             >
                 <div className="overflow-hidden">
                     <div className="mx-auto w-[80%] space-y-3 border-t border-border bg-background/95 pb-5 pt-3 backdrop-blur-xl">
@@ -401,20 +408,18 @@ function NavbarContent() {
                                         prefetch={false}
                                         onClick={closeMenus}
                                         aria-current={isActive ? "page" : undefined}
-                                        className={`group flex items-center justify-between rounded-xl px-3.5 py-3 text-sm font-medium transition-colors duration-200 ${
-                                            isActive
+                                        className={`group flex items-center justify-between rounded-xl px-3.5 py-3 text-sm font-medium transition-colors duration-200 ${isActive
                                                 ? "text-brand"
                                                 : "text-muted hover:text-foreground"
-                                        }`}
+                                            }`}
                                     >
                                         {item.label}
 
                                         <ChevronRight
-                                            className={`h-4 w-4 transition-transform duration-200 ${
-                                                isActive
+                                            className={`h-4 w-4 transition-transform duration-200 ${isActive
                                                     ? "translate-x-1 text-brand"
                                                     : "group-hover:translate-x-1 group-hover:text-brand"
-                                            }`}
+                                                }`}
                                         />
                                     </Link>
                                 );
