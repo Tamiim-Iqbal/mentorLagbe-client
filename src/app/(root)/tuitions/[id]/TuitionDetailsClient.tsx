@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+
 import {
     ArrowLeft,
     ArrowUpRight,
@@ -17,22 +18,48 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "@/app/context/AuthContext";
+
 import type { Tuition } from "@/components/home/TuitionCard";
+
 import { getTuitionDetails } from "@/lib/api/viewDetails";
+
+import {
+    getApplicationLimit,
+    getMyApplications,
+    type ApplicationLimitResponse,
+} from "@/lib/actions/ApplyTuition";
+
+import ApplyTuitionDialog from "./ApplyTuitionDialog";
 
 interface TuitionDetailsClientProps {
     id: string;
 }
 
 const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
-    const { isAuthenticated, isPending: isAuthPending } = useAuth();
+    const { user, isAuthenticated, isPending: isAuthPending } = useAuth();
 
     const [tuition, setTuition] = useState<Tuition | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+
     const [isSaved, setIsSaved] = useState(false);
 
+    // Application states
+    const [applicationLimit, setApplicationLimit] =
+        useState<ApplicationLimitResponse | null>(null);
+
+    const [hasApplied, setHasApplied] = useState(false);
+    const [applicationStatus, setApplicationStatus] = useState("");
+
+    const [checkingApplication, setCheckingApplication] = useState(true);
+    const [applicationCheckError, setApplicationCheckError] = useState("");
+
+    const [showApplyDialog, setShowApplyDialog] = useState(false);
+
+    // Fetch Tuition Details
     useEffect(() => {
+        let isMounted = true;
+
         const fetchTuitionDetails = async () => {
             try {
                 setLoading(true);
@@ -40,33 +67,116 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
 
                 const data: Tuition = await getTuitionDetails(id);
 
-                setTuition(data);
+                if (isMounted) {
+                    setTuition(data);
+                }
             } catch (err) {
                 console.error("Error fetching tuition details:", err);
 
-                if (err instanceof Error && err.message.includes("(404)")) {
-                    setError("This tuition is no longer available.");
-                } else {
-                    setError(
-                        err instanceof Error
-                            ? err.message
-                            : "Something went wrong."
-                    );
+                if (isMounted) {
+                    if (
+                        err instanceof Error &&
+                        err.message.includes("(404)")
+                    ) {
+                        setError("This tuition is no longer available.");
+                    } else {
+                        setError(
+                            err instanceof Error
+                                ? err.message
+                                : "Something went wrong."
+                        );
+                    }
                 }
             } finally {
-                setLoading(false);
+                if (isMounted) {
+                    setLoading(false);
+                }
             }
         };
 
         fetchTuitionDetails();
+
+        return () => {
+            isMounted = false;
+        };
     }, [id]);
-    
+
     // Scroll to top after tuition details load
     useEffect(() => {
         if (!loading) {
             window.scrollTo(0, 0);
         }
     }, [loading]);
+
+    // Check Student Application and Limit
+    useEffect(() => {
+        if (isAuthPending) return;
+
+        let isMounted = true;
+
+        const checkApplication = async () => {
+            setHasApplied(false);
+            setApplicationStatus("");
+            setApplicationLimit(null);
+            setApplicationCheckError("");
+
+            if (
+                !isAuthenticated ||
+                user?.userRole !== "student" ||
+                !user.email
+            ) {
+                setCheckingApplication(false);
+                return;
+            }
+
+            try {
+                setCheckingApplication(true);
+
+                const [limit, applications] = await Promise.all([
+                    getApplicationLimit(user.email),
+                    getMyApplications(user.email),
+                ]);
+
+                if (!isMounted) return;
+
+                setApplicationLimit(limit);
+
+                const existingApplication = applications.find(
+                    (application) =>
+                        String(application.tuitionId) === String(id)
+                );
+
+                if (existingApplication) {
+                    setHasApplied(true);
+                    setApplicationStatus(existingApplication.status);
+                }
+            } catch (err) {
+                console.error("Error checking application:", err);
+
+                if (isMounted) {
+                    setApplicationCheckError(
+                        "Unable to check your application status. Please refresh the page."
+                    );
+                }
+            } finally {
+                if (isMounted) {
+                    setCheckingApplication(false);
+                }
+            }
+        };
+
+        checkApplication();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [
+        isAuthPending,
+        isAuthenticated,
+        user?.email,
+        user?.userRole,
+        id,
+    ]);
 
     // Loading State
     if (loading) {
@@ -141,7 +251,25 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
         })
         : "Recently";
 
-    const isApplyDisabled = isAuthPending || !isAuthenticated;
+    const isStudent = user?.userRole === "student";
+
+    const handleApplicationSuccess = () => {
+        setHasApplied(true);
+        setApplicationStatus("pending");
+
+        setApplicationLimit((previous) =>
+            previous
+                ? {
+                    ...previous,
+                    totalApplications:
+                        previous.totalApplications + 1,
+                    isLimitReached:
+                        !previous.isPro &&
+                        previous.totalApplications + 1 >= 3,
+                }
+                : previous
+        );
+    };
 
     return (
         <main className="min-h-screen bg-background px-4 pb-16 pt-6 sm:px-6 sm:pt-8">
@@ -163,7 +291,6 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
 
                         {/* Banner Image */}
                         <div className="relative h-55 bg-background sm:h-65 lg:h-77">
-
                             {bannerImage ? (
                                 <Image
                                     src={bannerImage}
@@ -192,7 +319,9 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
                             {/* Bookmark */}
                             <button
                                 type="button"
-                                onClick={() => setIsSaved((prev) => !prev)}
+                                onClick={() =>
+                                    setIsSaved((prev) => !prev)
+                                }
                                 aria-label={
                                     isSaved
                                         ? "Remove bookmark"
@@ -200,13 +329,17 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
                                 }
                                 aria-pressed={isSaved}
                                 className={`absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full shadow-md backdrop-blur-md transition-all duration-200 hover:scale-110 ${isSaved
-                                        ? "bg-brand text-white"
-                                        : "bg-white/95 text-slate-700 hover:bg-brand hover:text-white"
+                                    ? "bg-brand text-white"
+                                    : "bg-white/95 text-slate-700 hover:bg-brand hover:text-white"
                                     }`}
                             >
                                 <Bookmark
                                     size={18}
-                                    fill={isSaved ? "currentColor" : "none"}
+                                    fill={
+                                        isSaved
+                                            ? "currentColor"
+                                            : "none"
+                                    }
                                 />
                             </button>
                         </div>
@@ -285,7 +418,8 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
                                 </div>
 
                                 <p className="mt-2 whitespace-pre-line text-sm leading-6 text-muted">
-                                    {description || "No description provided."}
+                                    {description ||
+                                        "No description provided."}
                                 </p>
                             </div>
                         </div>
@@ -344,8 +478,8 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
                                         </span>
                                         <span
                                             className={`font-semibold ${mode === "Online"
-                                                    ? "text-brand"
-                                                    : "text-orange-500"
+                                                ? "text-brand"
+                                                : "text-orange-500"
                                                 }`}
                                         >
                                             {mode}
@@ -391,7 +525,8 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
 
                                 <div className="mt-3 flex items-center gap-3">
                                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand text-base font-bold text-white">
-                                        {tutorName?.charAt(0).toUpperCase() || "T"}
+                                        {tutorName?.charAt(0).toUpperCase() ||
+                                            "T"}
                                     </div>
 
                                     <div className="min-w-0">
@@ -407,33 +542,124 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
                             </div>
 
                             {/* Apply Button */}
-                            <button
-                                type="button"
-                                disabled={isApplyDisabled}
-                                className={`mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-all duration-200 ${isApplyDisabled
-                                        ? "cursor-not-allowed bg-brand/65 text-white/90"
-                                        : "cursor-pointer bg-brand text-white hover:bg-brand-hover hover:shadow-lg hover:shadow-brand/20"
-                                    }`}
-                            >
-                                {isAuthPending
-                                    ? "Checking Account..."
-                                    : "Apply Now"}
-
-                                {!isApplyDisabled && (
+                            {isAuthPending ? (
+                                <button
+                                    type="button"
+                                    disabled
+                                    className="mt-4 flex h-12 w-full cursor-not-allowed items-center justify-center rounded-xl bg-brand/65 text-sm font-semibold text-white/90"
+                                >
+                                    Checking Account...
+                                </button>
+                            ) : !isAuthenticated ? (
+                                <Link
+                                    href="/signin"
+                                    className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand px-5 text-sm font-semibold text-white transition hover:bg-brand-hover"
+                                >
+                                    Sign in to Apply
                                     <ArrowUpRight size={17} />
-                                )}
-                            </button>
-
-                            {/* Login Notice */}
-                            {!isAuthPending && !isAuthenticated && (
-                                <p className="mt-2 text-center text-xs font-medium text-red-500">
-                                    Sign in to continue with your tuition application.
+                                </Link>
+                            ) : !isStudent ? (
+                                <button
+                                    type="button"
+                                    disabled
+                                    className="mt-4 flex min-h-12 w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-orange-300! bg-orange-100 px-3 text-center text-sm font-semibold text-orange-800 dark:bg-orange-100/75"
+                                >
+                                    <GraduationCap size={17} />
+                                    Only students can apply for tuitions.
+                                </button>
+                            ) : checkingApplication ? (
+                                <button
+                                    type="button"
+                                    disabled
+                                    className="mt-4 flex h-12 w-full cursor-not-allowed items-center justify-center rounded-xl bg-brand/65 text-sm font-semibold text-white/90"
+                                >
+                                    Checking Application...
+                                </button>
+                            ) : applicationCheckError ? (
+                                <p className="mt-4 rounded-xl bg-red-500/10 p-3 text-center text-xs font-medium text-red-500">
+                                    {applicationCheckError}
                                 </p>
+                            ) : hasApplied ? (
+                                <div className="mt-4 space-y-2">
+                                    <button
+                                        type="button"
+                                        disabled
+                                        className="flex h-12 w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-brand/80 bg-brand/80 text-base! font-semibold! text-white opacity-100"
+                                    >
+                                        <CheckCircle2 size={17} />
+                                        Already Applied ({applicationStatus})
+                                    </button>
+
+                                    <p className="text-center text-xs font-semibold text-muted">
+                                        Check application status on your{" "}
+                                        <Link
+                                            href={`/dashboard/${user?.userRole}`}
+                                            className="text-brand transition underline"
+                                        >
+                                            Dashboard
+                                        </Link>.
+                                    </p>
+                                </div>
+                            ) : applicationLimit?.isLimitReached ? (
+                                <div className="mt-4 space-y-2">
+                                    <button
+                                        type="button"
+                                        disabled
+                                        className="flex h-12 w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-orange-300! bg-orange-100 px-3 text-sm font-bold text-orange-800 dark:bg-amber-100/75"
+                                    >
+                                        <Clock size={17} />
+                                        Application Limit Reached
+                                    </button>
+
+                                    <div className="flex flex-wrap items-center justify-center gap-1.5">
+                                        <p className="text-xs leading-5 text-muted">
+                                            You have used all 3 free applications.
+                                        </p>
+
+                                        <Link
+                                            href="/pricing"
+                                            className="text-xs font-semibold text-brand transition hover:underline"
+                                        >
+                                            Explore Pro Plan
+                                        </Link>
+                                    </div>
+                                </div>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowApplyDialog(true)}
+                                    className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand px-5 text-sm font-semibold text-white transition-all hover:bg-brand-hover hover:shadow-lg hover:shadow-brand/20 cursor-pointer"
+                                >
+                                    Apply Now
+                                    <ArrowUpRight size={17} />
+                                </button>
                             )}
                         </div>
                     </aside>
                 </div>
             </div>
+
+            {/* Apply Tuition Dialog */}
+            {isStudent && user?.email && (
+                <ApplyTuitionDialog
+                    isOpen={showApplyDialog}
+                    onClose={() => setShowApplyDialog(false)}
+                    onSuccess={handleApplicationSuccess}
+                    tuition={{
+                        _id: String(_id),
+                        title,
+                        subject,
+                        monthlyFee,
+                        tutorName,
+                        tutorEmail,
+                    }}
+                    student={{
+                        name: user.name || "",
+                        email: user.email,
+                        phone: user.phone || "",
+                    }}
+                />
+            )}
         </main>
     );
 };

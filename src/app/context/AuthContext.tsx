@@ -10,8 +10,13 @@ import {
 
 import { authClient } from "@/lib/auth-client";
 
-type AuthUser = typeof authClient.$Infer.Session.user & {
+type AuthUser = Omit<
+    typeof authClient.$Infer.Session.user,
+    "userRole" | "isPro" | "phone"
+> & {
+    userRole?: string | null;
     isPro?: boolean | null;
+    phone?: string | null;
 };
 
 interface AuthContextType {

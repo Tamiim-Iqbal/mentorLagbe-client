@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -21,7 +22,7 @@ import NoUserState from "../_components/NoUserState";
 import { getMyApplications } from "@/lib/api/myApplications";
 import { IApplication } from "@/app/type/studentType";
 
-const FREE_APPLICATION_LIMIT = 5;
+const FREE_APPLICATION_LIMIT = 3;
 
 const StudentDashboardClient = () => {
     const { user, isPending: isAuthPending } = useAuth();
@@ -104,6 +105,11 @@ const StudentDashboardClient = () => {
     const applicationUsage = Math.min(
         applications.length,
         FREE_APPLICATION_LIMIT
+    );
+
+    const remainingApplications = Math.max(
+        FREE_APPLICATION_LIMIT - applications.length,
+        0
     );
 
     const applicationProgress = Math.min(
@@ -515,7 +521,8 @@ const StudentDashboardClient = () => {
                                 </p>
                             </div>
 
-                            <div className="flex h-1.5 overflow-hidden rounded-full bg-background">
+                            {/* Progress Bar */}
+                            <div className="flex h-3 overflow-hidden rounded-full bg-brand/15">
                                 <div
                                     className="h-full rounded-full bg-brand transition-all duration-500"
                                     style={{
@@ -526,6 +533,21 @@ const StudentDashboardClient = () => {
                                         }%`,
                                     }}
                                 />
+                            </div>
+
+                            {/* Used & Remaining */}
+                            <div className="mt-2 flex items-center justify-between gap-2 text-[11px] font-semibold">
+                                <span className="text-brand">
+                                    {isLoading || hasError
+                                        ? "Used: —"
+                                        : `${applicationUsage} Used`}
+                                </span>
+
+                                <span className="text-muted">
+                                    {isLoading || hasError
+                                        ? "Left: —"
+                                        : `${remainingApplications} Left`}
+                                </span>
                             </div>
                         </div>
 
