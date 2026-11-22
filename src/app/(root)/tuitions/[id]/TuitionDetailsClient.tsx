@@ -195,11 +195,22 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
         } catch (error) {
             console.error("Bookmark error:", error);
 
-            toast.error(
+            const errorMessage =
                 error instanceof Error
                     ? error.message
-                    : "Something went wrong."
-            );
+                    : "Something went wrong.";
+
+            if (
+                errorMessage.includes("SAVE_LIMIT_REACHED") ||
+                errorMessage.toLowerCase().includes("upgrade to pro") ||
+                errorMessage.toLowerCase().includes("up to 5")
+            ) {
+                toast.error(
+                    "Free plan allows only 5 saved tuitions. Upgrade to Pro for unlimited saves."
+                );
+            } else {
+                toast.error(errorMessage);
+            }
         } finally {
             setIsSaving(false);
         }
@@ -424,10 +435,11 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
                                         : "Bookmark tuition"
                                 }
                                 aria-pressed={isSaved}
-                                className={`absolute right-4 top-4 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full shadow-sm backdrop-blur-md transition-transform duration-200 hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60 ${isSaved
-                                    ? "bg-brand text-white"
-                                    : "bg-white/95 text-slate-700"
-                                    }`}
+                                className={`absolute right-4 top-4 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full shadow-sm backdrop-blur-md transition-transform duration-200 hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60 ${
+                                    isSaved
+                                        ? "bg-brand text-white"
+                                        : "bg-white/95 text-slate-700"
+                                }`}
                             >
                                 <Bookmark
                                     size={18}
@@ -570,10 +582,11 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
                                             Mode
                                         </span>
                                         <span
-                                            className={`font-semibold ${mode === "Online"
-                                                ? "text-brand"
-                                                : "text-orange-500"
-                                                }`}
+                                            className={`font-semibold ${
+                                                mode === "Online"
+                                                    ? "text-brand"
+                                                    : "text-orange-500"
+                                            }`}
                                         >
                                             {mode}
                                         </span>
@@ -721,7 +734,7 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
                                 <button
                                     type="button"
                                     onClick={() => setShowApplyDialog(true)}
-                                    className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand px-5 text-sm font-semibold text-white transition-all hover:bg-brand-hover hover:shadow-lg hover:shadow-brand/20 cursor-pointer"
+                                    className="mt-4 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand px-5 text-sm font-semibold text-white transition-all hover:bg-brand-hover hover:shadow-lg hover:shadow-brand/20"
                                 >
                                     Apply Now
                                     <ArrowUpRight size={17} />

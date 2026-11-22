@@ -72,7 +72,9 @@ const TuitionCard = ({ tuition }: TuitionCardProps) => {
         ? `${userEmail}:${_id}`
         : "";
 
-    const isSaved = Boolean(currentKey && savedKey === currentKey);
+    const isSaved = Boolean(
+        currentKey && savedKey === currentKey
+    );
 
     // Check saved status
     useEffect(() => {
@@ -85,7 +87,9 @@ const TuitionCard = ({ tuition }: TuitionCardProps) => {
                 const saved = await checkSavedTuition(userEmail, _id);
 
                 if (isMounted) {
-                    setSavedKey(saved ? `${userEmail}:${_id}` : null);
+                    setSavedKey(
+                        saved ? `${userEmail}:${_id}` : null
+                    );
                 }
             } catch (error) {
                 console.error("Saved tuition check error:", error);
@@ -99,46 +103,66 @@ const TuitionCard = ({ tuition }: TuitionCardProps) => {
         };
     }, [userEmail, _id]);
 
+    // Save / Remove Tuition
     const handleBookmark = async () => {
-    if (!user?.email) {
-        toast.error("Please sign in to save a tuition.");
-        return;
-    }
-
-    // Only students can save tuition
-    if (user.userRole !== "student") {
-        toast.error("Only students can save tuitions.");
-        return;
-    }
-
-    if (isSaving) return;
-
-    setIsSaving(true);
-
-    try {
-        if (isSaved) {
-            await removeSavedTuition(user.email, _id);
-
-            setSavedKey(null);
-            toast.success("Tuition removed from saved list.");
-        } else {
-            await saveTuition(user.email, _id);
-
-            setSavedKey(`${user.email.trim().toLowerCase()}:${_id}`);
-            toast.success("Tuition saved successfully.");
+        if (!user?.email) {
+            toast.error("Please sign in to save a tuition.");
+            return;
         }
-    } catch (error) {
-        console.error("Bookmark error:", error);
 
-        toast.error(
-            error instanceof Error
-                ? error.message
-                : "Something went wrong."
-        );
-    } finally {
-        setIsSaving(false);
-    }
-};
+        if (user.userRole !== "student") {
+            toast.error("Only students can save tuitions.");
+            return;
+        }
+
+        if (isSaving) return;
+
+        setIsSaving(true);
+
+        try {
+            if (isSaved) {
+                await removeSavedTuition(user.email, _id);
+
+                setSavedKey(null);
+
+                toast.success("Tuition removed from saved list.");
+            } else {
+                // Backend enforces the Free plan limit
+                // Free: 5 saved tuitions
+                // Pro: Unlimited saved tuitions
+
+                await saveTuition(user.email, _id);
+
+                setSavedKey(
+                    `${user.email.trim().toLowerCase()}:${_id}`
+                );
+
+                toast.success("Tuition saved successfully.");
+            }
+        } catch (error) {
+            console.error("Bookmark error:", error);
+
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : "Something went wrong.";
+
+            if (
+                errorMessage.includes("SAVE_LIMIT_REACHED") ||
+                errorMessage.toLowerCase().includes("upgrade to pro") ||
+                errorMessage.toLowerCase().includes("up to 5")
+            ) {
+                toast.error(
+                    "Free plan allows only 5 saved tuitions. Upgrade to Pro for unlimited saves."
+                );
+            } else {
+                toast.error(errorMessage);
+            }
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     return (
         <article className="group flex h-full flex-col rounded-2xl border border-border bg-surface p-4 transition-[border-color,box-shadow] duration-300 hover:border-brand/40! hover:shadow-lg hover:shadow-brand/10 sm:p-5">
 
