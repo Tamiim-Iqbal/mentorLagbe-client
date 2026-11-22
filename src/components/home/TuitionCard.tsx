@@ -43,9 +43,13 @@ export interface Tuition {
 
 interface TuitionCardProps {
     tuition: Tuition;
+    onSavedChange?: () => void;
 }
 
-const TuitionCard = ({ tuition }: TuitionCardProps) => {
+const TuitionCard = ({
+    tuition,
+    onSavedChange,
+}: TuitionCardProps) => {
     const { user } = useAuth();
 
     const [savedKey, setSavedKey] = useState<string | null>(null);
@@ -110,7 +114,7 @@ const TuitionCard = ({ tuition }: TuitionCardProps) => {
             return;
         }
 
-        if (user.userRole !== "student") {
+        if (user.userRole?.trim().toLowerCase() !== "student") {
             toast.error("Only students can save tuitions.");
             return;
         }
@@ -121,21 +125,18 @@ const TuitionCard = ({ tuition }: TuitionCardProps) => {
 
         try {
             if (isSaved) {
-                await removeSavedTuition(user.email, _id);
+                await removeSavedTuition(userEmail, _id);
 
                 setSavedKey(null);
 
+                // Remove card from Saved Tuitions page
+                onSavedChange?.();
+
                 toast.success("Tuition removed from saved list.");
             } else {
-                // Backend enforces the Free plan limit
-                // Free: 5 saved tuitions
-                // Pro: Unlimited saved tuitions
+                await saveTuition(userEmail, _id);
 
-                await saveTuition(user.email, _id);
-
-                setSavedKey(
-                    `${user.email.trim().toLowerCase()}:${_id}`
-                );
+                setSavedKey(`${userEmail}:${_id}`);
 
                 toast.success("Tuition saved successfully.");
             }

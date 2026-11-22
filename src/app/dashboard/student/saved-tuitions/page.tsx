@@ -1,10 +1,10 @@
-export const instant = false
+import SavedTuitionsClient from "./SavedTuitionsClient";
+
+export const instant = false;
 
 const SavedTuitionPage = () => {
     return (
-        <div>
-            Saved Tuition Page
-        </div>
+        <SavedTuitionsClient />
     );
 };
 
