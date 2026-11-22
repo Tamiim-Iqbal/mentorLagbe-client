@@ -65,10 +65,15 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
                 setLoading(true);
                 setError("");
 
-                const data: Tuition = await getTuitionDetails(id);
+                const response = await getTuitionDetails(id);
+
+                // Support both old and new API response structures
+                const data = (
+                    response as Tuition & { tuition?: Tuition }
+                ).tuition ?? response;
 
                 if (isMounted) {
-                    setTuition(data);
+                    setTuition(data as Tuition);
                 }
             } catch (err) {
                 console.error("Error fetching tuition details:", err);
@@ -328,10 +333,11 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
                                         : "Bookmark tuition"
                                 }
                                 aria-pressed={isSaved}
-                                className={`absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full shadow-md backdrop-blur-md transition-all duration-200 hover:scale-110 ${isSaved
-                                    ? "bg-brand text-white"
-                                    : "bg-white/95 text-slate-700 hover:bg-brand hover:text-white"
-                                    }`}
+                                className={`absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full shadow-md backdrop-blur-md transition-all duration-200 hover:scale-110 ${
+                                    isSaved
+                                        ? "bg-brand text-white"
+                                        : "bg-white/95 text-slate-700 hover:bg-brand hover:text-white"
+                                }`}
                             >
                                 <Bookmark
                                     size={18}
@@ -477,10 +483,11 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
                                             Mode
                                         </span>
                                         <span
-                                            className={`font-semibold ${mode === "Online"
-                                                ? "text-brand"
-                                                : "text-orange-500"
-                                                }`}
+                                            className={`font-semibold ${
+                                                mode === "Online"
+                                                    ? "text-brand"
+                                                    : "text-orange-500"
+                                            }`}
                                         >
                                             {mode}
                                         </span>

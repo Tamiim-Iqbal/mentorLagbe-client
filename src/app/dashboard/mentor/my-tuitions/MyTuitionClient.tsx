@@ -17,11 +17,17 @@ import {
     Clock3,
     Power,
 } from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 import { useAuth } from "@/app/context/AuthContext";
 import NoUserState from "../../_components/NoUserState";
 import { getMyTuitions } from "@/lib/api/myTuitions";
-import Image from "next/image";
+import { updateTuitionStatus } from "@/lib/updates/mentorStatus";
+import { deleteMentorTuition } from "@/lib/delete/mentorDeleteTuition";
+
+import DeleteDialog from "./deleteDialog";
 
 type ApprovalStatus = "pending" | "approved" | "rejected";
 
@@ -40,11 +46,26 @@ interface Tuition {
 }
 
 const MyTuitionClient = () => {
+    const router = useRouter();
+
     const { user, isPending: isAuthPending } = useAuth();
 
     const [tuitions, setTuitions] = useState<Tuition[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
+
+    const [updatingTuitionId, setUpdatingTuitionId] =
+        useState<string | null>(null);
+
+    // View Tuition Loading State
+    const [viewingTuitionId, setViewingTuitionId] =
+        useState<string | null>(null);
+
+    // Delete Dialog State
+    const [selectedTuition, setSelectedTuition] =
+        useState<Tuition | null>(null);
+
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Fetch My Tuitions
     useEffect(() => {
@@ -88,24 +109,142 @@ const MyTuitionClient = () => {
         };
     }, [user?.email, isAuthPending]);
 
-    // Toggle Active Status - UI Only
-    const handleToggleActive = (tuitionId: string) => {
-        setTuitions((previousTuitions) =>
-            previousTuitions.map((tuition) => {
-                const currentId = tuition._id || tuition.id || "";
+    // View Tuition - Backend Status Validation
+    const handleViewTuition = async (tuitionId: string) => {
+        if (!tuitionId || viewingTuitionId) return;
 
-                if (currentId !== tuitionId) return tuition;
+        try {
+            setViewingTuitionId(tuitionId);
 
-                return {
-                    ...tuition,
-                    isActive: !tuition.isActive,
-                };
-            })
-        );
+            const response = await fetch(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/tuitions/${tuitionId}`
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                toast.error(
+                    data.message ||
+                    data.error ||
+                    "Unable to view tuition."
+                );
+                return;
+            }
+
+            // Navigate only after successful backend validation
+            router.push(`/tuitions/${tuitionId}`);
+        } catch (error) {
+            console.error("Failed to view tuition:", error);
+
+            toast.error("Failed to check tuition status.");
+        } finally {
+            setViewingTuitionId(null);
+        }
+    };
+
+    // Toggle Active Status - Backend Connected
+    const handleToggleActive = async (
+        tuitionId: string,
+        currentStatus: boolean
+    ) => {
+        if (!user?.email || !tuitionId || updatingTuitionId) return;
+
+        const newStatus = !currentStatus;
+
+        try {
+            setUpdatingTuitionId(tuitionId);
+
+            const result = await updateTuitionStatus(
+                tuitionId,
+                user.email,
+                newStatus
+            );
+
+            // Update UI after successful API response
+            setTuitions((previousTuitions) =>
+                previousTuitions.map((tuition) => {
+                    const currentId = tuition._id || tuition.id || "";
+
+                    if (currentId !== tuitionId) return tuition;
+
+                    return {
+                        ...tuition,
+                        isActive: result.isActive ?? newStatus,
+                    };
+                })
+            );
+
+            toast.success(result.message);
+        } catch (error) {
+            console.error(
+                "Failed to update tuition status:",
+                error
+            );
+
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to update tuition status."
+            );
+        } finally {
+            setUpdatingTuitionId(null);
+        }
+    };
+
+    // Delete Tuition - Backend Connected
+    const handleDeleteTuition = async () => {
+        if (!user?.email || !selectedTuition || isDeleting) {
+            return;
+        }
+
+        const tuitionId =
+            selectedTuition._id || selectedTuition.id || "";
+
+        if (!tuitionId) {
+            toast.error("Invalid tuition ID.");
+            return;
+        }
+
+        try {
+            setIsDeleting(true);
+
+            const result = await deleteMentorTuition(
+                tuitionId,
+                user.email
+            );
+
+            // Remove tuition from UI after successful deletion
+            setTuitions((previousTuitions) =>
+                previousTuitions.filter(
+                    (tuition) =>
+                        (tuition._id || tuition.id) !== tuitionId
+                )
+            );
+
+            toast.success(result.message);
+
+            // Close dialog
+            setSelectedTuition(null);
+        } catch (error) {
+            console.error(
+                "Failed to delete tuition:",
+                error
+            );
+
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to delete tuition."
+            );
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     // Approval Status Icon
-    const getApprovalStatusIcon = (status: ApprovalStatus) => {
+    const getApprovalStatusIcon = (
+        status: ApprovalStatus
+    ) => {
         switch (status) {
             case "approved":
                 return (
@@ -137,7 +276,9 @@ const MyTuitionClient = () => {
     };
 
     // Approval Status Style
-    const getApprovalStatusStyle = (status: ApprovalStatus) => {
+    const getApprovalStatusStyle = (
+        status: ApprovalStatus
+    ) => {
         switch (status) {
             case "approved":
                 return "bg-brand/10 text-brand";
@@ -271,10 +412,19 @@ const MyTuitionClient = () => {
                             <tbody className="divide-y divide-border">
                                 {tuitions.map((tuition) => {
                                     const tuitionId =
-                                        tuition._id || tuition.id || "";
+                                        tuition._id ||
+                                        tuition.id ||
+                                        "";
 
                                     const approvalStatus =
-                                        tuition.approvalStatus || "pending";
+                                        tuition.approvalStatus ||
+                                        "pending";
+
+                                    const isUpdating =
+                                        updatingTuitionId === tuitionId;
+
+                                    const isViewing =
+                                        viewingTuitionId === tuitionId;
 
                                     return (
                                         <tr
@@ -315,7 +465,9 @@ const MyTuitionClient = () => {
                                                                     className="shrink-0 text-emerald-500"
                                                                     strokeWidth={2}
                                                                 />
-                                                                <span>Online</span>
+                                                                <span>
+                                                                    Online
+                                                                </span>
                                                             </div>
                                                         ) : (
                                                             <div className="flex max-w-[200px] items-center gap-1.5 text-xs text-muted">
@@ -379,31 +531,45 @@ const MyTuitionClient = () => {
                                                 </span>
                                             </td>
 
-                                            {/* Active Status - UI Toggle */}
+                                            {/* Active Status */}
                                             <td className="py-4 pl-2 pr-3">
                                                 <button
                                                     type="button"
                                                     onClick={() =>
                                                         handleToggleActive(
-                                                            tuitionId
+                                                            tuitionId,
+                                                            tuition.isActive
                                                         )
+                                                    }
+                                                    disabled={
+                                                        isUpdating ||
+                                                        !!updatingTuitionId
                                                     }
                                                     aria-label={`Change status to ${
                                                         tuition.isActive
                                                             ? "Closed"
                                                             : "Active"
                                                     }`}
-                                                    aria-pressed={tuition.isActive}
-                                                    className={`inline-flex cursor-pointer items-center gap-1 whitespace-nowrap rounded-full pl-2.5 pr-3 py-1.5 text-xs! font-semibold! transition ${
+                                                    aria-pressed={
                                                         tuition.isActive
-                                                            ? "bg-brand/10 text-brand hover:bg-brand/20"
-                                                            : "bg-background text-muted hover:bg-muted/10 hover:text-foreground"
+                                                    }
+                                                    className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full pl-2.5 pr-3 py-1.5 text-xs! font-semibold! transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                                                        tuition.isActive
+                                                            ? "cursor-pointer bg-brand/10 text-brand hover:bg-brand/20"
+                                                            : "cursor-pointer bg-background text-muted hover:bg-muted/10 hover:text-foreground"
                                                     }`}
                                                 >
-                                                    <Power
-                                                        size={12}
-                                                        strokeWidth={2.5}
-                                                    />
+                                                    {isUpdating ? (
+                                                        <LoaderCircle
+                                                            size={12}
+                                                            className="animate-spin"
+                                                        />
+                                                    ) : (
+                                                        <Power
+                                                            size={12}
+                                                            strokeWidth={2.5}
+                                                        />
+                                                    )}
 
                                                     {tuition.isActive
                                                         ? "Active"
@@ -411,34 +577,61 @@ const MyTuitionClient = () => {
                                                 </button>
                                             </td>
 
-                                            {/* Actions - UI Only */}
+                                            {/* Actions */}
                                             <td className="px-2 py-4">
                                                 <div className="flex items-center justify-center gap-1">
+                                                    {/* View Tuition */}
                                                     <button
                                                         type="button"
+                                                        onClick={() =>
+                                                            handleViewTuition(
+                                                                tuitionId
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            !!viewingTuitionId
+                                                        }
                                                         title="View Tuition"
                                                         aria-label="View Tuition"
-                                                        className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-muted transition hover:bg-brand/10 hover:text-brand"
+                                                        className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-muted transition hover:bg-brand/10 hover:text-brand disabled:cursor-not-allowed disabled:opacity-60"
                                                     >
-                                                        <Eye size={17} />
+                                                        {isViewing ? (
+                                                            <LoaderCircle
+                                                                size={17}
+                                                                className="animate-spin"
+                                                            />
+                                                        ) : (
+                                                            <Eye size={17} />
+                                                        )}
                                                     </button>
 
+                                                    {/* Edit Tuition - UI Only */}
                                                     <button
                                                         type="button"
                                                         title="Edit Tuition"
                                                         aria-label="Edit Tuition"
                                                         className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-muted transition hover:bg-brand/10 hover:text-brand"
                                                     >
-                                                        <SquarePen size={17} />
+                                                        <SquarePen
+                                                            size={17}
+                                                        />
                                                     </button>
 
+                                                    {/* Delete Tuition */}
                                                     <button
                                                         type="button"
                                                         title="Delete Tuition"
                                                         aria-label="Delete Tuition"
+                                                        onClick={() =>
+                                                            setSelectedTuition(
+                                                                tuition
+                                                            )
+                                                        }
                                                         className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-muted transition hover:bg-red-500/10 hover:text-red-500"
                                                     >
-                                                        <Trash2 size={17} />
+                                                        <Trash2
+                                                            size={17}
+                                                        />
                                                     </button>
                                                 </div>
                                             </td>
@@ -453,11 +646,26 @@ const MyTuitionClient = () => {
                     <div className="border-t border-border px-5 py-3">
                         <p className="text-xs text-muted">
                             Showing {tuitions.length}{" "}
-                            {tuitions.length === 1 ? "tuition" : "tuitions"}
+                            {tuitions.length === 1
+                                ? "tuition"
+                                : "tuitions"}
                         </p>
                     </div>
                 </div>
             )}
+
+            {/* Delete Tuition Dialog */}
+            <DeleteDialog
+                isOpen={!!selectedTuition}
+                tuitionTitle={selectedTuition?.title || ""}
+                isDeleting={isDeleting}
+                onClose={() => {
+                    if (!isDeleting) {
+                        setSelectedTuition(null);
+                    }
+                }}
+                onConfirm={handleDeleteTuition}
+            />
         </div>
     );
 };
