@@ -80,9 +80,8 @@ const DashboardSidebar = ({
         <>
             {/* Brand */}
             <div
-                className={`flex h-[88px] shrink-0 items-center ${
-                    collapsed ? "justify-center" : "px-6"
-                }`}
+                className={`flex h-[88px] shrink-0 items-center ${collapsed ? "justify-center" : "px-6"
+                    }`}
             >
                 <Link
                     href="/"
@@ -114,9 +113,8 @@ const DashboardSidebar = ({
                     title={collapsed ? name || "Profile" : undefined}
                 >
                     <div
-                        className={`flex items-center ${
-                            collapsed ? "justify-center" : "gap-3"
-                        }`}
+                        className={`flex items-center ${collapsed ? "justify-center" : "gap-3"
+                            }`}
                     >
                         {/* Avatar */}
                         {(user.image || initials) && (
@@ -183,11 +181,10 @@ const DashboardSidebar = ({
             {/* Not Logged In - Login Card */}
             {!user && (
                 <div
-                    className={`mx-3 mb-2 rounded-2xl border border-border bg-background/70 ${
-                        collapsed
+                    className={`mx-3 mb-2 rounded-2xl border border-border bg-background/70 ${collapsed
                             ? "mx-2 flex justify-center p-2"
                             : "p-4"
-                    }`}
+                        }`}
                 >
                     {collapsed ? (
                         <Link
@@ -263,15 +260,13 @@ const DashboardSidebar = ({
                                                 ? label
                                                 : undefined
                                         }
-                                        className={`group relative flex items-center gap-3 rounded-xl px-3.5 py-3 text-[13px] font-semibold transition-all duration-200 ${
-                                            active
+                                        className={`group relative flex items-center gap-3 rounded-xl px-3.5 py-3 text-[13px] font-semibold transition-all duration-200 ${active
                                                 ? "bg-brand text-white shadow-md shadow-brand/20"
                                                 : "text-muted hover:bg-brand-tint hover:text-brand"
-                                        } ${
-                                            collapsed
+                                            } ${collapsed
                                                 ? "justify-center px-2"
                                                 : ""
-                                        }`}
+                                            }`}
                                     >
                                         <Icon
                                             size={19}
@@ -310,15 +305,13 @@ const DashboardSidebar = ({
                                     ? preference.label
                                     : undefined
                             }
-                            className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-[13px] font-semibold transition-all ${
-                                isActive(preference.href)
+                            className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-[13px] font-semibold transition-all ${isActive(preference.href)
                                     ? "bg-brand text-white shadow-md shadow-brand/20"
                                     : "text-muted hover:bg-brand-tint hover:text-brand"
-                            } ${
-                                collapsed
+                                } ${collapsed
                                     ? "justify-center px-2"
                                     : ""
-                            }`}
+                                }`}
                         >
                             <preference.icon size={19} />
                             {!collapsed && (
@@ -336,16 +329,12 @@ const DashboardSidebar = ({
                         onClick={onSignOut}
                         disabled={signingOut}
                         title={collapsed ? "Sign out" : undefined}
-                        className={`flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-[13px] font-semibold text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-50 ${
-                            collapsed ? "justify-center px-2" : ""
-                        }`}
+                        className={`flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl pr-5 py-3 text-[13px] font-semibold text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-50`}
                     >
                         <LogOut size={19} />
 
                         {!collapsed && (
-                            signingOut
-                                ? "Signing out..."
-                                : "Sign out"
+                            signingOut ? "Signing out..." : "Sign out"
                         )}
                     </button>
                 </div>
@@ -357,9 +346,8 @@ const DashboardSidebar = ({
         <>
             {/* Desktop Sidebar */}
             <aside
-                className={`fixed bottom-4 left-4 top-4 z-40 hidden flex-col overflow-visible rounded-[24px] border border-border bg-surface shadow-xl shadow-black/[0.04] transition-all duration-300 lg:flex ${
-                    collapsed ? "w-[84px]" : "w-[260px]"
-                }`}
+                className={`fixed bottom-4 left-4 top-4 z-40 hidden flex-col overflow-visible rounded-[24px] border border-border bg-surface shadow-xl shadow-black/[0.04] transition-all duration-300 lg:flex ${collapsed ? "w-[84px]" : "w-[260px]"
+                    }`}
             >
                 <div className="flex h-full flex-col overflow-hidden rounded-[24px]">
                     {sidebarContent}
@@ -390,11 +378,10 @@ const DashboardSidebar = ({
 
             {/* Mobile Sidebar */}
             <aside
-                className={`fixed bottom-0 left-0 top-0 z-[60] flex w-[285px] flex-col border-r border-border bg-surface shadow-2xl transition-transform duration-300 lg:hidden ${
-                    mobileOpen
+                className={`fixed bottom-0 left-0 top-0 z-[60] flex w-[285px] flex-col border-r border-border bg-surface shadow-2xl transition-transform duration-300 lg:hidden ${mobileOpen
                         ? "translate-x-0"
                         : "-translate-x-full"
-                }`}
+                    }`}
             >
                 <button
                     onClick={onCloseMobile}
