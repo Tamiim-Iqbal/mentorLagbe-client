@@ -1,4 +1,9 @@
+
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
+
 import {
     Users,
     GraduationCap,
@@ -6,48 +11,21 @@ import {
     Wallet,
     ArrowUpRight,
     ShieldCheck,
+    LoaderCircle,
 } from "lucide-react";
 
-const stats = [
-    {
-        title: "Total Users",
-        value: 0,
-        description: "Registered users",
-        icon: Users,
-        color: "text-blue-500",
-        bg: "bg-blue-500/10",
-    },
-    {
-        title: "Total Tutors",
-        value: 0,
-        description: "Registered tutors",
-        icon: GraduationCap,
-        color: "text-brand",
-        bg: "bg-brand/10",
-    },
-    {
-        title: "Pending Tuitions",
-        value: 0,
-        description: "Waiting for approval",
-        icon: BookOpen,
-        color: "text-amber-500",
-        bg: "bg-amber-500/10",
-    },
-    {
-        title: "Total Revenue",
-        value: "৳0",
-        description: "Total transactions",
-        icon: Wallet,
-        color: "text-purple-500",
-        bg: "bg-purple-500/10",
-    },
-];
+
+import { getTransactions } from "@/lib/transaction/getTransaction";
+import { getAdminUsers } from "@/lib/api/adminUser";
+import { getAdminTuitions } from "@/lib/api/adminTuition";
+
+const ITEMS_PER_PAGE = 100;
 
 const quickActions = [
     {
         title: "Manage Users",
         description: "View and manage all registered users.",
-        href: "/admin/users",
+        href: "/dashboard/admin/users",
         icon: Users,
         color: "text-blue-500",
         bg: "bg-blue-500/10",
@@ -55,7 +33,7 @@ const quickActions = [
     {
         title: "Manage Tuitions",
         description: "Review and manage tuition listings.",
-        href: "/admin/tuitions",
+        href: "/dashboard/admin/tuitions",
         icon: BookOpen,
         color: "text-brand",
         bg: "bg-brand/10",
@@ -63,7 +41,7 @@ const quickActions = [
     {
         title: "Transactions",
         description: "Monitor payment and transaction records.",
-        href: "/admin/transactions",
+        href: "/dashboard/admin/transactions",
         icon: Wallet,
         color: "text-purple-500",
         bg: "bg-purple-500/10",
@@ -71,6 +49,184 @@ const quickActions = [
 ];
 
 const AdminDashboard = () => {
+    const [totalUsers, setTotalUsers] = useState(0);
+    const [totalTutors, setTotalTutors] = useState(0);
+    const [pendingTuitions, setPendingTuitions] = useState(0);
+    const [totalRevenue, setTotalRevenue] = useState("0");
+
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const fetchDashboardStats = async () => {
+            try {
+                setIsLoading(true);
+                setError("");
+
+                // Fetch initial data
+                const [
+                    firstUsersResult,
+                    pendingTuitionsResult,
+                    firstTransactionsResult,
+                ] = await Promise.all([
+                    getAdminUsers(1, ITEMS_PER_PAGE),
+
+                    getAdminTuitions({
+                        page: 1,
+                        limit: 1,
+                        status: "pending",
+                    }),
+
+                    getTransactions({
+                        page: 1,
+                        limit: ITEMS_PER_PAGE,
+                    }),
+                ]);
+
+                // Fetch remaining users pages
+                const userResults = [firstUsersResult];
+
+                for (
+                    let page = 2;
+                    page <= firstUsersResult.pagination.totalPages;
+                    page++
+                ) {
+                    userResults.push(
+                        await getAdminUsers(page, ITEMS_PER_PAGE)
+                    );
+                }
+
+                // Count all registered mentors
+                const tutorsCount = userResults.reduce(
+                    (count, result) =>
+                        count +
+                        result.data.filter(
+                            (user) => user.userRole === "mentor"
+                        ).length,
+                    0
+                );
+
+                // Fetch remaining transaction pages
+                const transactionResults = [
+                    firstTransactionsResult,
+                ];
+
+                for (
+                    let page = 2;
+                    page <= firstTransactionsResult.pagination.totalPages;
+                    page++
+                ) {
+                    transactionResults.push(
+                        await getTransactions({
+                            page,
+                            limit: ITEMS_PER_PAGE,
+                        })
+                    );
+                }
+
+                // Calculate paid revenue by currency
+                const revenueByCurrency: Record<string, number> = {};
+
+                transactionResults.forEach((result) => {
+                    result.data.forEach((transaction) => {
+                        if (transaction.paymentStatus !== "paid") {
+                            return;
+                        }
+
+                        const currency =
+                            transaction.currency.toUpperCase();
+
+                        revenueByCurrency[currency] =
+                            (revenueByCurrency[currency] || 0) +
+                            transaction.amount;
+                    });
+                });
+
+                const formattedRevenue = Object.entries(
+                    revenueByCurrency
+                )
+                    .map(([currency, amount]) =>
+                        new Intl.NumberFormat("en-US", {
+                            style: "currency",
+                            currency,
+                        }).format(amount / 100)
+                    )
+                    .join(" · ");
+
+                if (!isMounted) return;
+
+                setTotalUsers(
+                    firstUsersResult.pagination.totalUsers
+                );
+
+                setTotalTutors(tutorsCount);
+
+                setPendingTuitions(
+                    pendingTuitionsResult.pagination.totalTuitions
+                );
+
+                setTotalRevenue(formattedRevenue || "0");
+            } catch (error) {
+                if (!isMounted) return;
+
+                console.error("Dashboard stats error:", error);
+
+                setError(
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to load dashboard statistics."
+                );
+            } finally {
+                if (isMounted) {
+                    setIsLoading(false);
+                }
+            }
+        };
+
+        fetchDashboardStats();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
+    const stats = [
+        {
+            title: "Total Users",
+            value: totalUsers,
+            description: "Registered users",
+            icon: Users,
+            color: "text-blue-500",
+            bg: "bg-blue-500/10",
+        },
+        {
+            title: "Total Tutors",
+            value: totalTutors,
+            description: "Registered tutors",
+            icon: GraduationCap,
+            color: "text-brand",
+            bg: "bg-brand/10",
+        },
+        {
+            title: "Pending Tuitions",
+            value: pendingTuitions,
+            description: "Waiting for approval",
+            icon: BookOpen,
+            color: "text-amber-500",
+            bg: "bg-amber-500/10",
+        },
+        {
+            title: "Total Revenue",
+            value: totalRevenue,
+            description: "Total paid transactions",
+            icon: Wallet,
+            color: "text-purple-500",
+            bg: "bg-purple-500/10",
+        },
+    ];
+
     return (
         <div className="space-y-5">
             {/* Header */}
@@ -104,19 +260,26 @@ const AdminDashboard = () => {
                             key={stat.title}
                             className="rounded-xl border border-border bg-surface p-4 transition hover:border-brand/30"
                         >
-                            <div className="flex items-start justify-between">
-                                <div>
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
                                     <p className="text-sm text-muted">
                                         {stat.title}
                                     </p>
 
-                                    <h2 className="mt-2 text-2xl font-bold text-foreground">
-                                        {stat.value}
+                                    <h2 className="mt-2 break-words text-2xl font-bold text-foreground">
+                                        {isLoading ? (
+                                            <LoaderCircle
+                                                size={22}
+                                                className="animate-spin text-brand"
+                                            />
+                                        ) : (
+                                            stat.value
+                                        )}
                                     </h2>
                                 </div>
 
                                 <div
-                                    className={`flex h-9 w-9 items-center justify-center rounded-lg ${stat.bg}`}
+                                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${stat.bg}`}
                                 >
                                     <Icon
                                         size={18}
@@ -132,6 +295,15 @@ const AdminDashboard = () => {
                     );
                 })}
             </div>
+
+            {/* Error Message */}
+            {error && (
+                <div className="rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3">
+                    <p className="text-sm text-red-500">
+                        {error}
+                    </p>
+                </div>
+            )}
 
             {/* Quick Actions */}
             <div className="rounded-xl border border-border bg-surface p-4 sm:p-5">

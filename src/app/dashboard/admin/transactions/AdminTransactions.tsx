@@ -101,23 +101,40 @@ const AdminTransactions = () => {
         setPage(1);
     };
 
-    // Role badge
+    // Role badge — আগের ডিজাইন
     const RoleBadge = ({
         role,
     }: {
         role: "student" | "mentor";
     }) => {
-        const isStudent = role === "student";
-
         return (
             <span
                 className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold capitalize ${
-                    isStudent
+                    role === "student"
                         ? "bg-green-500/10 text-green-600 dark:text-green-400"
                         : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
                 }`}
             >
                 {role}
+            </span>
+        );
+    };
+
+    // Plan — শুধু colored text
+    const PlanBadge = ({
+        role,
+    }: {
+        role: "student" | "mentor";
+    }) => {
+        return (
+            <span
+                className={`text-sm font-semibold ${
+                    role === "student"
+                        ? "text-green-600 dark:text-green-400"
+                        : "text-blue-600 dark:text-blue-400"
+                }`}
+            >
+                PRO {role === "student" ? "Student" : "Mentor"}
             </span>
         );
     };
@@ -300,12 +317,9 @@ const AdminTransactions = () => {
 
                                         {/* Plan */}
                                         <td className="px-4 py-4">
-                                            <span className="text-sm font-semibold text-foreground">
-                                                PRO{" "}
-                                                {transaction.role === "student"
-                                                    ? "Student"
-                                                    : "Mentor"}
-                                            </span>
+                                            <PlanBadge
+                                                role={transaction.role}
+                                            />
                                         </td>
 
                                         {/* Amount */}
