@@ -7,28 +7,32 @@ import {
     ArrowUpRight,
     Check,
     Crown,
+    LoaderCircle,
 } from "lucide-react";
+
+import toast from "react-hot-toast";
+
 import { useAuth } from "@/app/context/AuthContext";
+import { createStripeCheckout } from "@/lib/transaction/stripeCheckout";
 
-
-type Role = "tutor" | "student";
+type Role = "mentor" | "student";
 
 const plans = {
-    tutor: {
+    mentor: {
         free: {
-            name: "Free Tutor",
+            name: "Free Mentor",
             description:
                 "Essential tools to test the platform and publish initial tuitions.",
             price: 0,
             features: [
                 "Up to 2 tuition posts",
-                "Standard tutor profile & bio",
+                "Standard mentor profile & bio",
                 "Receive student application alerts",
                 "Standard support",
             ],
         },
         pro: {
-            name: "Pro Tutor",
+            name: "Pro Mentor",
             description:
                 "Unlimited reach, verified credential badges, and prioritized tuition listings.",
             price: 15,
@@ -36,7 +40,7 @@ const plans = {
                 "Unlimited tuition posts",
                 "Golden Verified PRO Badge",
                 "Featured listings in search & homepage",
-                "24/7 Priority tutor support",
+                "24/7 Priority mentor support",
             ],
         },
     },
@@ -73,11 +77,34 @@ export default function PricingClient() {
     const sectionRef = useRef<HTMLElement>(null);
 
     const [isVisible, setIsVisible] = useState(false);
-    const [role, setRole] = useState<Role>("tutor");
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Store only manual role selection
+    const [selectedRole, setSelectedRole] = useState<Role | null>(null);
 
     const { user, isAuthenticated } = useAuth();
 
+    const isAdmin = user?.userRole === "admin";
     const isPro = !!user?.isPro;
+
+    // Determine default role from logged-in user
+    const defaultRole: Role =
+        user?.userRole === "student"
+            ? "student"
+            : "mentor";
+
+    // Use manual selection if available, otherwise user's default role
+    const role = selectedRole ?? defaultRole;
+
+    // Check whether selected role matches the logged-in user's role
+    const isOwnRole = user?.userRole === role;
+
+    // Upgrade is allowed only for the user's own role
+    const canUpgrade =
+        isAuthenticated &&
+        !isAdmin &&
+        !isPro &&
+        isOwnRole;
 
     const { free, pro } = plans[role];
 
@@ -121,6 +148,48 @@ export default function PricingClient() {
             ? ("running" as const)
             : ("paused" as const),
     });
+
+    // Redirect directly to Stripe Checkout
+    const handleUpgrade = async () => {
+        if (!canUpgrade || isLoading) return;
+
+        try {
+            setIsLoading(true);
+
+            const checkoutUrl = await createStripeCheckout(role);
+
+            window.location.href = checkoutUrl;
+        } catch (error) {
+            console.error("Stripe checkout error:", error);
+
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : "Something went wrong"
+            );
+
+            setIsLoading(false);
+        }
+    };
+
+    // Upgrade button title
+    const upgradeTitle = isAdmin
+        ? "PRO is only available for students and mentors"
+        : isPro
+            ? "You are already a PRO member"
+            : !isAuthenticated
+                ? "Login to upgrade"
+                : !isOwnRole
+                    ? `You cannot purchase the ${role} plan with your current account`
+                    : "Upgrade to PRO";
+
+    // Role restriction message
+    const restrictionMessage =
+        user?.userRole === "student" && role === "mentor"
+            ? "Only available for mentors"
+            : user?.userRole === "mentor" && role === "student"
+                ? "Only available for students"
+                : null;
 
     return (
         <section
@@ -211,17 +280,17 @@ export default function PricingClient() {
                             className="absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-full bg-brand transition-transform duration-300 ease-out"
                             style={{
                                 transform:
-                                    role === "tutor"
+                                    role === "mentor"
                                         ? "translateX(0)"
                                         : "translateX(100%)",
                             }}
                         />
 
-                        {(["tutor", "student"] as Role[]).map((item) => (
+                        {(["mentor", "student"] as Role[]).map((item) => (
                             <button
                                 key={item}
                                 type="button"
-                                onClick={() => setRole(item)}
+                                onClick={() => setSelectedRole(item)}
                                 aria-pressed={role === item}
                                 className={`relative z-10 h-9 cursor-pointer rounded-full text-sm font-semibold capitalize transition-colors duration-300 ${
                                     role === item
@@ -375,25 +444,30 @@ export default function PricingClient() {
                             {/* PRO Button */}
                             <button
                                 type="button"
-                                disabled={!isAuthenticated || isPro}
-                                title={
-                                    isPro
-                                        ? "You are already a PRO member"
-                                        : !isAuthenticated
-                                            ? "Login to upgrade"
-                                            : "Payment integration coming soon"
-                                }
+                                onClick={handleUpgrade}
+                                disabled={!canUpgrade || isLoading}
+                                title={upgradeTitle}
                                 className={`group mt-auto inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl px-6 text-sm font-semibold transition-all duration-300 ${
-                                    isPro
-                                        ? "cursor-not-allowed bg-brand/70 text-brand-foreground opacity-80"
-                                        : !isAuthenticated
-                                            ? "cursor-not-allowed bg-brand/60 text-brand-foreground"
-                                            : "cursor-pointer bg-brand text-brand-foreground hover:bg-brand-hover"
+                                    canUpgrade
+                                        ? "cursor-pointer bg-brand text-brand-foreground hover:bg-brand-hover"
+                                        : "cursor-not-allowed bg-brand/40 text-brand-foreground/80"
                                 }`}
                             >
-                                {isPro ? (
+                                {isLoading ? (
                                     <>
-                                        <Check size={17} strokeWidth={2.5} />
+                                        Processing...
+
+                                        <LoaderCircle
+                                            size={17}
+                                            className="animate-spin"
+                                        />
+                                    </>
+                                ) : isPro && isOwnRole ? (
+                                    <>
+                                        <Check
+                                            size={17}
+                                            strokeWidth={2.5}
+                                        />
                                         Pro Active Member
                                     </>
                                 ) : (
@@ -407,6 +481,13 @@ export default function PricingClient() {
                                     </>
                                 )}
                             </button>
+
+                            {/* Role Restriction Message */}
+                            {restrictionMessage && (
+                                <p className="mt-2 text-center text-xs text-muted">
+                                    {restrictionMessage}
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>
