@@ -25,10 +25,20 @@ export interface AdminUsersResponse {
 
 export const getAdminUsers = async (
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
+    search: string = ""
 ): Promise<AdminUsersResponse> => {
+    const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+    });
+
+    if (search.trim()) {
+        params.set("search", search.trim());
+    }
+
     const response = await fetch(
-        `${API_BASE_URL}/admin/users?page=${page}&limit=${limit}`,
+        `${API_BASE_URL}/admin/users?${params.toString()}`,
         {
             method: "GET",
             headers: {

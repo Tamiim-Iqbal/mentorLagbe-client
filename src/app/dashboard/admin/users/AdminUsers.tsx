@@ -3,14 +3,17 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+
 import {
     Users,
+    Search,
     LoaderCircle,
     ChevronLeft,
     ChevronRight,
     RefreshCw,
     ChevronDown,
 } from "lucide-react";
+
 import toast from "react-hot-toast";
 
 import {
@@ -27,6 +30,8 @@ const AdminUsers = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
 
+    const [search, setSearch] = useState("");
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [updatingUserId, setUpdatingUserId] = useState<string | null>(
@@ -39,16 +44,23 @@ const AdminUsers = () => {
     useEffect(() => {
         let ignore = false;
 
-        getAdminUsers(currentPage, limit)
-            .then((result) => {
+        const timer = setTimeout(async () => {
+            try {
+                setLoading(true);
+                setError("");
+
+                const result = await getAdminUsers(
+                    currentPage,
+                    limit,
+                    search
+                );
+
                 if (ignore) return;
 
                 setUsers(result.data);
                 setTotalUsers(result.pagination.totalUsers);
                 setTotalPages(result.pagination.totalPages);
-                setError("");
-            })
-            .catch((err) => {
+            } catch (err) {
                 if (ignore) return;
 
                 setError(
@@ -56,17 +68,24 @@ const AdminUsers = () => {
                         ? err.message
                         : "Something went wrong."
                 );
-            })
-            .finally(() => {
+            } finally {
                 if (!ignore) {
                     setLoading(false);
                 }
-            });
+            }
+        }, 300);
 
         return () => {
             ignore = true;
+            clearTimeout(timer);
         };
-    }, [currentPage]);
+    }, [currentPage, search]);
+
+    // Search Handler
+    const handleSearch = (value: string) => {
+        setSearch(value);
+        setCurrentPage(1);
+    };
 
     // Refresh Users
     const handleRefresh = async () => {
@@ -74,7 +93,11 @@ const AdminUsers = () => {
             setLoading(true);
             setError("");
 
-            const result = await getAdminUsers(currentPage, limit);
+            const result = await getAdminUsers(
+                currentPage,
+                limit,
+                search
+            );
 
             setUsers(result.data);
             setTotalUsers(result.pagination.totalUsers);
@@ -188,7 +211,7 @@ const AdminUsers = () => {
             {/* Table */}
             <div className="overflow-hidden rounded-xl border border-border bg-surface">
                 {/* Table Header */}
-                <div className="flex items-center justify-between border-b border-border p-4">
+                <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h2 className="text-base font-semibold text-foreground">
                             All Users
@@ -199,18 +222,39 @@ const AdminUsers = () => {
                         </p>
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={handleRefresh}
-                        disabled={loading}
-                        className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-medium text-foreground transition hover:bg-background disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                        <RefreshCw
-                            size={14}
-                            className={loading ? "animate-spin" : ""}
-                        />
-                        Refresh
-                    </button>
+                    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                        {/* Search */}
+                        <div className="relative w-full sm:w-64">
+                            <Search
+                                size={16}
+                                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+                            />
+
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={(e) =>
+                                    handleSearch(e.target.value)
+                                }
+                                placeholder="Search users..."
+                                className="h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-xs text-foreground outline-none transition focus:border-brand"
+                            />
+                        </div>
+
+                        {/* Refresh */}
+                        <button
+                            type="button"
+                            onClick={handleRefresh}
+                            disabled={loading}
+                            className="flex items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-medium text-foreground transition hover:bg-background disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <RefreshCw
+                                size={14}
+                                className={loading ? "animate-spin" : ""}
+                            />
+                            Refresh
+                        </button>
+                    </div>
                 </div>
 
                 {/* Table Content */}
@@ -294,7 +338,9 @@ const AdminUsers = () => {
                                         </h3>
 
                                         <p className="mt-1 text-xs text-muted">
-                                            Registered users will appear here.
+                                            {search
+                                                ? "Try searching with another keyword."
+                                                : "Registered users will appear here."}
                                         </p>
                                     </td>
                                 </tr>
@@ -384,36 +430,26 @@ const AdminUsers = () => {
                                                             onChange={(e) =>
                                                                 handleUpdateRole(
                                                                     user,
-                                                                    e.target
-                                                                        .value as UserRole
+                                                                    e.target.value as UserRole
                                                                 )
                                                             }
                                                             disabled={
                                                                 isUpdating ||
-                                                                updatingUserId !==
-                                                                    null
+                                                                updatingUserId !== null
                                                             }
-                                                            className="w-32 appearance-none rounded-lg border border-border bg-brand/5 py-2 pl-3 pr-8 text-xs font-medium capitalize text-foreground transition-colors duration-200 outline-none focus:outline-none focus-visible:outline-none focus:border-brand focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
+                                                            className="w-32 appearance-none rounded-lg border border-border bg-brand/5 py-2 pl-3 pr-8 text-xs font-medium capitalize text-foreground transition-colors duration-200 outline-none focus:border-brand disabled:cursor-not-allowed disabled:opacity-50"
                                                         >
                                                             {getAvailableRoles().map(
                                                                 (availableRole) => (
                                                                     <option
-                                                                        key={
-                                                                            availableRole
-                                                                        }
-                                                                        value={
-                                                                            availableRole
-                                                                        }
+                                                                        key={availableRole}
+                                                                        value={availableRole}
                                                                         className="bg-surface text-foreground"
                                                                     >
                                                                         {availableRole
-                                                                            .charAt(
-                                                                                0
-                                                                            )
+                                                                            .charAt(0)
                                                                             .toUpperCase() +
-                                                                            availableRole.slice(
-                                                                                1
-                                                                            )}
+                                                                            availableRole.slice(1)}
                                                                     </option>
                                                                 )
                                                             )}
@@ -457,10 +493,9 @@ const AdminUsers = () => {
                     <div className="flex items-center gap-2">
                         <button
                             type="button"
-                            onClick={() => {
-                                setLoading(true);
-                                setCurrentPage((prev) => prev - 1);
-                            }}
+                            onClick={() =>
+                                setCurrentPage((prev) => prev - 1)
+                            }
                             disabled={currentPage <= 1 || loading}
                             className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-background disabled:cursor-not-allowed disabled:opacity-40"
                         >
@@ -469,15 +504,14 @@ const AdminUsers = () => {
                         </button>
 
                         <span className="px-2 text-xs text-muted">
-                            {currentPage} / {Math.max(totalPages, 1)}
+                            {totalPages === 0 ? 0 : currentPage} / {Math.max(totalPages, 1)}
                         </span>
 
                         <button
                             type="button"
-                            onClick={() => {
-                                setLoading(true);
-                                setCurrentPage((prev) => prev + 1);
-                            }}
+                            onClick={() =>
+                                setCurrentPage((prev) => prev + 1)
+                            }
                             disabled={
                                 currentPage >= totalPages || loading
                             }
