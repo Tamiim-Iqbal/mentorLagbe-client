@@ -1,9 +1,10 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+
 import {
     ArrowUpRight,
     Bookmark,
@@ -11,6 +12,16 @@ import {
     MapPin,
     UserRound,
 } from "lucide-react";
+
+import toast from "react-hot-toast";
+
+import { useAuth } from "@/app/context/AuthContext";
+
+import {
+    checkSavedTuition,
+    saveTuition,
+    removeSavedTuition,
+} from "@/lib/api/saveTuition";
 
 export interface Tuition {
     _id: string;
@@ -35,7 +46,10 @@ interface TuitionCardProps {
 }
 
 const TuitionCard = ({ tuition }: TuitionCardProps) => {
-    const [isSaved, setIsSaved] = useState(false);
+    const { user } = useAuth();
+
+    const [savedKey, setSavedKey] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     const {
         _id,
@@ -52,6 +66,79 @@ const TuitionCard = ({ tuition }: TuitionCardProps) => {
 
     const displayLocation = mode === "Online" ? "Online" : location;
 
+    const userEmail = user?.email?.trim().toLowerCase() || "";
+
+    const currentKey = userEmail
+        ? `${userEmail}:${_id}`
+        : "";
+
+    const isSaved = Boolean(currentKey && savedKey === currentKey);
+
+    // Check saved status
+    useEffect(() => {
+        if (!userEmail) return;
+
+        let isMounted = true;
+
+        const checkStatus = async () => {
+            try {
+                const saved = await checkSavedTuition(userEmail, _id);
+
+                if (isMounted) {
+                    setSavedKey(saved ? `${userEmail}:${_id}` : null);
+                }
+            } catch (error) {
+                console.error("Saved tuition check error:", error);
+            }
+        };
+
+        checkStatus();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [userEmail, _id]);
+
+    const handleBookmark = async () => {
+    if (!user?.email) {
+        toast.error("Please sign in to save a tuition.");
+        return;
+    }
+
+    // Only students can save tuition
+    if (user.userRole !== "student") {
+        toast.error("Only students can save tuitions.");
+        return;
+    }
+
+    if (isSaving) return;
+
+    setIsSaving(true);
+
+    try {
+        if (isSaved) {
+            await removeSavedTuition(user.email, _id);
+
+            setSavedKey(null);
+            toast.success("Tuition removed from saved list.");
+        } else {
+            await saveTuition(user.email, _id);
+
+            setSavedKey(`${user.email.trim().toLowerCase()}:${_id}`);
+            toast.success("Tuition saved successfully.");
+        }
+    } catch (error) {
+        console.error("Bookmark error:", error);
+
+        toast.error(
+            error instanceof Error
+                ? error.message
+                : "Something went wrong."
+        );
+    } finally {
+        setIsSaving(false);
+    }
+};
     return (
         <article className="group flex h-full flex-col rounded-2xl border border-border bg-surface p-4 transition-[border-color,box-shadow] duration-300 hover:border-brand/40! hover:shadow-lg hover:shadow-brand/10 sm:p-5">
 
@@ -86,10 +173,15 @@ const TuitionCard = ({ tuition }: TuitionCardProps) => {
                 {/* Bookmark */}
                 <button
                     type="button"
-                    onClick={() => setIsSaved((prev) => !prev)}
-                    aria-label={isSaved ? "Remove bookmark" : "Bookmark tuition"}
+                    onClick={handleBookmark}
+                    disabled={isSaving}
+                    aria-label={
+                        isSaved
+                            ? "Remove bookmark"
+                            : "Bookmark tuition"
+                    }
                     aria-pressed={isSaved}
-                    className={`absolute right-3 top-3 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full shadow-sm backdrop-blur-md transition-transform duration-200 hover:scale-105 ${
+                    className={`absolute right-3 top-3 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full shadow-sm backdrop-blur-md transition-transform duration-200 hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60 ${
                         isSaved
                             ? "bg-brand text-white"
                             : "bg-white/95 text-slate-700"

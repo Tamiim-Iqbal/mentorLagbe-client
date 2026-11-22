@@ -17,6 +17,8 @@ import {
     UserRound,
 } from "lucide-react";
 
+import toast from "react-hot-toast";
+
 import { useAuth } from "@/app/context/AuthContext";
 
 import type { Tuition } from "@/components/home/TuitionCard";
@@ -28,6 +30,12 @@ import {
     getMyApplications,
     type ApplicationLimitResponse,
 } from "@/lib/actions/ApplyTuition";
+
+import {
+    checkSavedTuition,
+    saveTuition,
+    removeSavedTuition,
+} from "@/lib/api/saveTuition";
 
 import ApplyTuitionDialog from "./ApplyTuitionDialog";
 
@@ -42,7 +50,19 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    const [isSaved, setIsSaved] = useState(false);
+    // Bookmark states
+    const [savedKey, setSavedKey] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+
+    const userEmail = user?.email?.trim().toLowerCase() || "";
+
+    const currentSavedKey = userEmail
+        ? `${userEmail}:${id}`
+        : "";
+
+    const isSaved = Boolean(
+        currentSavedKey && savedKey === currentSavedKey
+    );
 
     // Application states
     const [applicationLimit, setApplicationLimit] =
@@ -112,6 +132,78 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
             window.scrollTo(0, 0);
         }
     }, [loading]);
+
+    // Check Saved Tuition Status
+    useEffect(() => {
+        if (isAuthPending || !isAuthenticated || !userEmail) {
+            return;
+        }
+
+        let isMounted = true;
+
+        const checkStatus = async () => {
+            try {
+                const saved = await checkSavedTuition(userEmail, id);
+
+                if (isMounted) {
+                    setSavedKey(
+                        saved ? `${userEmail}:${id}` : null
+                    );
+                }
+            } catch (error) {
+                console.error("Saved tuition check error:", error);
+            }
+        };
+
+        checkStatus();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [isAuthPending, isAuthenticated, userEmail, id]);
+
+    // Save or Remove Tuition
+    const handleBookmark = async () => {
+        if (!isAuthenticated || !userEmail) {
+            toast.error("Please sign in to save a tuition.");
+            return;
+        }
+
+        if (user?.userRole !== "student") {
+            toast.error("Only students can save tuitions.");
+            return;
+        }
+
+        if (isSaving) return;
+
+        setIsSaving(true);
+
+        try {
+            if (isSaved) {
+                await removeSavedTuition(userEmail, id);
+
+                setSavedKey(null);
+
+                toast.success("Tuition removed from saved list.");
+            } else {
+                await saveTuition(userEmail, id);
+
+                setSavedKey(`${userEmail}:${id}`);
+
+                toast.success("Tuition saved successfully.");
+            }
+        } catch (error) {
+            console.error("Bookmark error:", error);
+
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : "Something went wrong."
+            );
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     // Check Student Application and Limit
     useEffect(() => {
@@ -324,28 +416,23 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
                             {/* Bookmark */}
                             <button
                                 type="button"
-                                onClick={() =>
-                                    setIsSaved((prev) => !prev)
-                                }
+                                onClick={handleBookmark}
+                                disabled={isSaving || isAuthPending}
                                 aria-label={
                                     isSaved
                                         ? "Remove bookmark"
                                         : "Bookmark tuition"
                                 }
                                 aria-pressed={isSaved}
-                                className={`absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full shadow-md backdrop-blur-md transition-all duration-200 hover:scale-110 ${
-                                    isSaved
-                                        ? "bg-brand text-white"
-                                        : "bg-white/95 text-slate-700 hover:bg-brand hover:text-white"
-                                }`}
+                                className={`absolute right-4 top-4 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full shadow-sm backdrop-blur-md transition-transform duration-200 hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60 ${isSaved
+                                    ? "bg-brand text-white"
+                                    : "bg-white/95 text-slate-700"
+                                    }`}
                             >
                                 <Bookmark
                                     size={18}
-                                    fill={
-                                        isSaved
-                                            ? "currentColor"
-                                            : "none"
-                                    }
+                                    strokeWidth={2}
+                                    fill={isSaved ? "currentColor" : "none"}
                                 />
                             </button>
                         </div>
@@ -483,11 +570,10 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
                                             Mode
                                         </span>
                                         <span
-                                            className={`font-semibold ${
-                                                mode === "Online"
-                                                    ? "text-brand"
-                                                    : "text-orange-500"
-                                            }`}
+                                            className={`font-semibold ${mode === "Online"
+                                                ? "text-brand"
+                                                : "text-orange-500"
+                                                }`}
                                         >
                                             {mode}
                                         </span>
