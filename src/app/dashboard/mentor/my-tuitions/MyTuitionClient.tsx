@@ -28,6 +28,7 @@ import { updateTuitionStatus } from "@/lib/updates/mentorStatus";
 import { deleteMentorTuition } from "@/lib/delete/mentorDeleteTuition";
 
 import DeleteDialog from "./deleteDialog";
+import UpdateTuitionDialog from "./updateTuitionDialog";
 
 type ApprovalStatus = "pending" | "approved" | "rejected";
 
@@ -40,7 +41,9 @@ interface Tuition {
     mode: "Online" | "Offline";
     location?: string;
     monthlyFee: number;
+    daysPerWeek: number;
     bannerImage: string;
+    description: string;
     approvalStatus: ApprovalStatus;
     isActive: boolean;
 }
@@ -66,6 +69,10 @@ const MyTuitionClient = () => {
         useState<Tuition | null>(null);
 
     const [isDeleting, setIsDeleting] = useState(false);
+
+    // Edit Tuition Dialog State
+    const [editingTuition, setEditingTuition] =
+        useState<Tuition | null>(null);
 
     // Fetch My Tuitions
     useEffect(() => {
@@ -239,6 +246,29 @@ const MyTuitionClient = () => {
         } finally {
             setIsDeleting(false);
         }
+    };
+
+    // Update Tuition - Update Local State
+    const handleTuitionUpdated = (
+        updatedTuition: Partial<Tuition>
+    ) => {
+        const tuitionId =
+            updatedTuition._id || updatedTuition.id || "";
+
+        setTuitions((previousTuitions) =>
+            previousTuitions.map((tuition) => {
+                const currentId = tuition._id || tuition.id || "";
+
+                if (currentId !== tuitionId) return tuition;
+
+                return {
+                    ...tuition,
+                    ...updatedTuition,
+                };
+            })
+        );
+
+        setEditingTuition(null);
     };
 
     // Approval Status Icon
@@ -605,11 +635,16 @@ const MyTuitionClient = () => {
                                                         )}
                                                     </button>
 
-                                                    {/* Edit Tuition - UI Only */}
+                                                    {/* Edit Tuition */}
                                                     <button
                                                         type="button"
                                                         title="Edit Tuition"
                                                         aria-label="Edit Tuition"
+                                                        onClick={() =>
+                                                            setEditingTuition(
+                                                                tuition
+                                                            )
+                                                        }
                                                         className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-muted transition hover:bg-brand/10 hover:text-brand"
                                                     >
                                                         <SquarePen
@@ -653,6 +688,16 @@ const MyTuitionClient = () => {
                     </div>
                 </div>
             )}
+
+            {/* Edit Tuition Dialog */}
+            <UpdateTuitionDialog
+                key={editingTuition?._id || editingTuition?.id || "new"}
+                isOpen={!!editingTuition}
+                tuition={editingTuition}
+                tutorEmail={user.email}
+                onClose={() => setEditingTuition(null)}
+                onUpdated={handleTuitionUpdated}
+            />
 
             {/* Delete Tuition Dialog */}
             <DeleteDialog
