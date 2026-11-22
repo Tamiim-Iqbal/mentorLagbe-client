@@ -1,11 +1,10 @@
+import AdminDashboard from "./AdminDashboard";
+
+
 export const instant = false;
 
-const AdminDashboard = () => {
-    return (
-        <div>
-            Admin Dashboard
-        </div>
-    );
+const AdminDashboardPage = () => {
+    return <AdminDashboard />;
 };
 
-export default AdminDashboard;
+export default AdminDashboardPage;

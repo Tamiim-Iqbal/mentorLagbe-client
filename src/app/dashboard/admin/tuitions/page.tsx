@@ -1,11 +1,10 @@
+import AdminTuitions from "./AdminTuitions";
+
+
 export const instant = false;
 
 const TuitionsPage = () => {
-    return (
-        <div>
-            Tuitions Page
-        </div>
-    );
+    return <AdminTuitions />;
 };
 
 export default TuitionsPage;

@@ -1,11 +1,10 @@
+import AdminTransactions from "./AdminTransactions";
+
+
 export const instant = false;
 
 const TransactionsPage = () => {
-    return (
-        <div>
-            Transactions Page
-        </div>
-    );
+    return <AdminTransactions />;
 };
 
 export default TransactionsPage;

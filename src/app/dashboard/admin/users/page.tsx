@@ -1,11 +1,9 @@
+import AdminUsers from "./AdminUsers";
+
 export const instant = false;
 
 const UsersPage = () => {
-    return (
-        <div>
-            Users Page
-        </div>
-    );
+    return <AdminUsers />;
 };
 
 export default UsersPage;
