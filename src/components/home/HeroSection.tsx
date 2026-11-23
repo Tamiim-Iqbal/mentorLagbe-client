@@ -70,7 +70,7 @@ const HeroSection = () => {
 
         setCanScrollRight(
             container.scrollLeft + container.clientWidth <
-                container.scrollWidth - 8
+            container.scrollWidth - 8
         );
     };
 
@@ -82,20 +82,17 @@ const HeroSection = () => {
         return () => window.removeEventListener("resize", updateArrows);
     }, []);
 
-    const edgeMask = `linear-gradient(to right, ${
-        canScrollLeft ? "transparent 0, #000 28px" : "#000 0"
-    }, ${
-        canScrollRight
+    const edgeMask = `linear-gradient(to right, ${canScrollLeft ? "transparent 0, #000 28px" : "#000 0"
+        }, ${canScrollRight
             ? "#000 calc(100% - 28px), transparent 100%"
             : "#000 100%"
-    })`;
+        })`;
 
     const reveal = (delay: number, extra = "") => ({
-        className: `${extra} transition-all duration-1000 ease-out motion-reduce:transition-none ${
-            mounted
-                ? "translate-y-0 opacity-100 blur-0"
-                : "translate-y-6 opacity-0 blur-sm"
-        }`,
+        className: `${extra} transition-all duration-1000 ease-out motion-reduce:transition-none ${mounted
+            ? "translate-y-0 opacity-100 blur-0"
+            : "translate-y-6 opacity-0 blur-sm"
+            }`,
         style: { transitionDelay: `${delay}ms` },
     });
 
@@ -255,7 +252,8 @@ const HeroSection = () => {
                         className="hero-halo flex h-11 shrink-0 cursor-pointer items-center justify-center rounded-[18px] bg-brand px-5 text-sm font-bold text-brand-foreground transition-colors duration-200 hover:bg-brand-hover sm:h-12 sm:px-7"
                         style={{ outline: "none", fontWeight: 600 }}
                     >
-                        Search Tuitions
+                        <span className="sm:hidden">Search</span>
+                        <span className="hidden sm:inline">Search Tuitions</span>
                     </button>
                 </form>
 
