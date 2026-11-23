@@ -1,7 +1,20 @@
-
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import {
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+    type FormEvent,
+} from "react";
+
+import {
+    usePathname,
+    useRouter,
+    useSearchParams,
+} from "next/navigation";
+
 import {
     Search,
     RotateCcw,
@@ -44,7 +57,25 @@ const classLevels = [
 
 const ITEMS_PER_PAGE = 9;
 
+type FilterKey = "search" | "subject" | "class" | "mode" | "page";
+
 export default function AllTuitions() {
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+
+    // URL is the single source of truth for all filters.
+    // - Back navigation restores the URL, so filters are restored.
+    // - Navbar "Tuitions" click goes to a clean URL, so everything resets.
+    const urlSearch = searchParams.get("search") || "";
+    const urlSubject = searchParams.get("subject") || "";
+    const urlClass = searchParams.get("class") || "";
+    const urlMode = searchParams.get("mode") || "";
+    const urlPage = Math.max(
+        1,
+        parseInt(searchParams.get("page") || "1", 10) || 1
+    );
+
     const [tuitions, setTuitions] = useState<Tuition[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -55,85 +86,125 @@ export default function AllTuitions() {
     // Pagination Scroll Control
     const shouldScrollToList = useRef(false);
 
-    // Search
-    const [searchInput, setSearchInput] = useState("");
-    const [searchTerm, setSearchTerm] = useState("");
+    // Search input (typing state, URL is updated with debounce)
+    const [searchInput, setSearchInput] = useState(urlSearch);
 
-    // Filters
-    const [selectedSubject, setSelectedSubject] = useState("");
-    const [selectedClass, setSelectedClass] = useState("");
-    const [selectedMode, setSelectedMode] = useState("");
+    // Last search value that this component wrote / synced with the URL.
+    // If the URL changes to something else (navbar click, back/forward),
+    // the input is synced with it.
+    const [syncedSearch, setSyncedSearch] = useState(urlSearch);
 
-    // Pagination
-    const [currentPage, setCurrentPage] = useState(1);
+    if (urlSearch !== syncedSearch) {
+        setSyncedSearch(urlSearch);
+        setSearchInput(urlSearch);
+    }
 
-    // Fetch Tuitions
+    // Update URL (replace, so history is not flooded)
+    const updateURL = useCallback(
+        (updates: Partial<Record<FilterKey, string>>) => {
+            const params = new URLSearchParams(searchParams.toString());
+
+            // Cleanup legacy param
+            params.delete("from");
+
+            (Object.entries(updates) as [FilterKey, string][]).forEach(
+                ([key, value]) => {
+                    if (value && !(key === "page" && value === "1")) {
+                        params.set(key, value);
+                    } else {
+                        params.delete(key);
+                    }
+                }
+            );
+
+            const queryString = params.toString();
+
+            router.replace(
+                queryString ? `${pathname}?${queryString}` : pathname,
+                { scroll: false }
+            );
+        },
+        [pathname, router, searchParams]
+    );
+
+    // Real-time search with debounce
     useEffect(() => {
+        const query = searchInput.trim();
+
+        if (query === urlSearch) return;
+
+        const timer = setTimeout(() => {
+            setSyncedSearch(query);
+            updateURL({ search: query, page: "1" });
+        }, 350);
+
+        return () => clearTimeout(timer);
+    }, [searchInput, urlSearch, updateURL]);
+
+    // Fetch Tuitions from Backend
+    useEffect(() => {
+        const controller = new AbortController();
+
         const fetchTuitions = async () => {
             try {
+                await Promise.resolve();
+
+                if (controller.signal.aborted) return;
+
                 setLoading(true);
                 setError("");
 
-                const data = await getAllTuitions();
-                setTuitions(data);
+                const data = await getAllTuitions({
+                    search: urlSearch,
+                    signal: controller.signal,
+                });
+
+                if (!controller.signal.aborted) {
+                    setTuitions(data);
+                }
             } catch (err) {
+                if (controller.signal.aborted) return;
+
                 setError(
                     err instanceof Error
                         ? err.message
                         : "Failed to load tuitions."
                 );
             } finally {
-                setLoading(false);
+                if (!controller.signal.aborted) {
+                    setLoading(false);
+                }
             }
         };
 
         fetchTuitions();
-    }, []);
+
+        return () => controller.abort();
+    }, [urlSearch]);
 
     // Search & Filter
     const filteredTuitions = useMemo(() => {
         return tuitions.filter((tuition) => {
-            const search = searchTerm.toLowerCase();
-
-            const matchesSearch =
-                !search ||
-                tuition.title?.toLowerCase().includes(search) ||
-                tuition.subject?.toLowerCase().includes(search) ||
-                tuition.classLevel?.toLowerCase().includes(search) ||
-                tuition.location?.toLowerCase().includes(search) ||
-                tuition.tutorName?.toLowerCase().includes(search);
-
             const matchesSubject =
-                !selectedSubject ||
-                tuition.subject === selectedSubject;
+                !urlSubject ||
+                tuition.subject?.toLowerCase() ===
+                    urlSubject.toLowerCase();
 
             const matchesClass =
-                !selectedClass ||
-                tuition.classLevel === selectedClass;
+                !urlClass || tuition.classLevel === urlClass;
 
-            const matchesMode =
-                !selectedMode ||
-                tuition.mode === selectedMode;
+            const matchesMode = !urlMode || tuition.mode === urlMode;
 
-            return (
-                matchesSearch &&
-                matchesSubject &&
-                matchesClass &&
-                matchesMode
-            );
+            return matchesSubject && matchesClass && matchesMode;
         });
-    }, [
-        tuitions,
-        searchTerm,
-        selectedSubject,
-        selectedClass,
-        selectedMode,
-    ]);
+    }, [tuitions, urlSubject, urlClass, urlMode]);
 
     // Pagination
     const totalPages = Math.ceil(
         filteredTuitions.length / ITEMS_PER_PAGE
     );
+
+    const currentPage = Math.min(urlPage, Math.max(1, totalPages));
 
     const paginatedTuitions = filteredTuitions.slice(
         (currentPage - 1) * ITEMS_PER_PAGE,
@@ -157,33 +228,32 @@ export default function AllTuitions() {
         if (page === currentPage) return;
 
         shouldScrollToList.current = true;
-        setCurrentPage(page);
+        updateURL({ page: String(page) });
     };
 
     // Search Submit
     const handleSearch = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        setCurrentPage(1);
-        setSearchTerm(searchInput.trim());
+        const query = searchInput.trim();
+
+        setSearchInput(query);
+        setSyncedSearch(query);
+
+        updateURL({ search: query, page: "1" });
+    };
+
+    // Reset All Filters
+    const resetFilters = () => {
+        setSearchInput("");
+        setSyncedSearch("");
+
+        router.replace(pathname, { scroll: false });
     };
 
     // Clear All
     const clearFilters = () => {
-        setSearchInput("");
-        setSearchTerm("");
-        setSelectedSubject("");
-        setSelectedClass("");
-        setSelectedMode("");
-        setCurrentPage(1);
-    };
-
-    // Reset Only Filters
-    const resetFilters = () => {
-        setSelectedSubject("");
-        setSelectedClass("");
-        setSelectedMode("");
-        setCurrentPage(1);
+        resetFilters();
     };
 
     // Pagination Numbers
@@ -223,7 +293,7 @@ export default function AllTuitions() {
     const inputClassName =
         "h-[42px] w-full appearance-none rounded-xl border border-brand/20 bg-brand/[0.055] pl-11 pr-4 text-sm !text-foreground caret-brand outline-none shadow-none transition-colors duration-200 placeholder:!text-muted/70 hover:border-brand/40 focus:!border-brand focus:!bg-brand/[0.055] focus:!text-foreground focus:!outline-none focus:!ring-2 focus:!ring-brand/20 focus:!shadow-none focus-visible:!outline-none focus-visible:!bg-brand/[0.055] focus-visible:!text-foreground";
 
-    // Select styles - Same focus fix as Update Profile
+    // Select styles
     const selectClassName =
         "h-11 w-full cursor-pointer appearance-none rounded-xl border border-brand/20 bg-brand/[0.055] px-3 text-sm !text-foreground caret-brand outline-none shadow-none transition-colors duration-200 hover:border-brand/40 focus:!border-brand focus:!bg-brand/[0.055] focus:!text-foreground focus:!outline-none focus:!ring-2 focus:!ring-brand/20 focus:!shadow-none focus-visible:!outline-none focus-visible:!bg-brand/[0.055] focus-visible:!text-foreground";
 
@@ -293,9 +363,9 @@ export default function AllTuitions() {
                             <input
                                 type="text"
                                 value={searchInput}
-                                onChange={(e) =>
-                                    setSearchInput(e.target.value)
-                                }
+                                onChange={(e) => {
+                                    setSearchInput(e.target.value);
+                                }}
                                 placeholder="Search by subject, title, tutor or location..."
                                 className={inputClassName}
                             />
@@ -322,10 +392,12 @@ export default function AllTuitions() {
                             </label>
 
                             <select
-                                value={selectedSubject}
+                                value={urlSubject}
                                 onChange={(e) => {
-                                    setSelectedSubject(e.target.value);
-                                    setCurrentPage(1);
+                                    updateURL({
+                                        subject: e.target.value,
+                                        page: "1",
+                                    });
                                 }}
                                 className={selectClassName}
                             >
@@ -346,10 +418,12 @@ export default function AllTuitions() {
                             </label>
 
                             <select
-                                value={selectedClass}
+                                value={urlClass}
                                 onChange={(e) => {
-                                    setSelectedClass(e.target.value);
-                                    setCurrentPage(1);
+                                    updateURL({
+                                        class: e.target.value,
+                                        page: "1",
+                                    });
                                 }}
                                 className={selectClassName}
                             >
@@ -370,10 +444,12 @@ export default function AllTuitions() {
                             </label>
 
                             <select
-                                value={selectedMode}
+                                value={urlMode}
                                 onChange={(e) => {
-                                    setSelectedMode(e.target.value);
-                                    setCurrentPage(1);
+                                    updateURL({
+                                        mode: e.target.value,
+                                        page: "1",
+                                    });
                                 }}
                                 className={selectClassName}
                             >
@@ -474,7 +550,7 @@ export default function AllTuitions() {
 
                 ) : (
                     <>
-                        {/* Reuse Existing TuitionCard */}
+                        {/* Tuition Cards */}
                         <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
                             {paginatedTuitions.map((tuition) => (
                                 <TuitionCard
@@ -525,10 +601,11 @@ export default function AllTuitions() {
                                             onClick={() =>
                                                 handlePageChange(page)
                                             }
-                                            className={`h-10 min-w-10 cursor-pointer rounded-xl border px-3 text-sm font-semibold outline-none transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/20 ${currentPage === page
-                                                ? "border-brand bg-brand text-white"
-                                                : "border-border bg-surface text-foreground hover:border-brand hover:text-brand"
-                                                }`}
+                                            className={`h-10 min-w-10 cursor-pointer rounded-xl border px-3 text-sm font-semibold outline-none transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/20 ${
+                                                currentPage === page
+                                                    ? "border-brand bg-brand text-white"
+                                                    : "border-border bg-surface text-foreground hover:border-brand hover:text-brand"
+                                            }`}
                                         >
                                             {page}
                                         </button>

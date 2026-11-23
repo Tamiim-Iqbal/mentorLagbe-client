@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+
 import {
     Search,
     ChevronLeft,
@@ -30,11 +31,9 @@ const subjects = [
     { name: "Database Management", icon: Database },
     { name: "Computer Science", icon: Cpu },
     { name: "Mathematics", icon: Sigma },
-
     { name: "C++ Programming", icon: Code },
     { name: "Java Programming", icon: Coffee },
     { name: "Python Programming", icon: Braces },
-
     { name: "Accounting", icon: Calculator },
     { name: "Economics", icon: TrendingUp },
     { name: "Physics", icon: Atom },
@@ -54,18 +53,21 @@ const HeroSection = () => {
 
     const subjectsRef = useRef<HTMLDivElement>(null);
 
-    // Start the entrance sequence right after first paint
+    // Entrance animation
     useEffect(() => {
         const frame = requestAnimationFrame(() => setMounted(true));
+
         return () => cancelAnimationFrame(frame);
     }, []);
 
-    // Show each arrow only when there is more to scroll in that direction
+    // Update subject scroll arrows
     const updateArrows = () => {
         const container = subjectsRef.current;
+
         if (!container) return;
 
         setCanScrollLeft(container.scrollLeft > 8);
+
         setCanScrollRight(
             container.scrollLeft + container.clientWidth <
                 container.scrollWidth - 8
@@ -74,16 +76,20 @@ const HeroSection = () => {
 
     useEffect(() => {
         updateArrows();
+
         window.addEventListener("resize", updateArrows);
+
         return () => window.removeEventListener("resize", updateArrows);
     }, []);
 
-    // Soft fade on the edges that have hidden content
     const edgeMask = `linear-gradient(to right, ${
         canScrollLeft ? "transparent 0, #000 28px" : "#000 0"
-    }, ${canScrollRight ? "#000 calc(100% - 28px), transparent 100%" : "#000 100%"})`;
+    }, ${
+        canScrollRight
+            ? "#000 calc(100% - 28px), transparent 100%"
+            : "#000 100%"
+    })`;
 
-    // Staggered entrance: returns className + delay to spread onto an element
     const reveal = (delay: number, extra = "") => ({
         className: `${extra} transition-all duration-1000 ease-out motion-reduce:transition-none ${
             mounted
@@ -93,11 +99,44 @@ const HeroSection = () => {
         style: { transitionDelay: `${delay}ms` },
     });
 
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        router.push("/tuitions");
+    // Navigate from Home to Tuition page
+    // Filters live in the URL, so back navigation restores them
+    const navigateToTuitions = (params?: {
+        search?: string;
+        subject?: string;
+    }) => {
+        const query = new URLSearchParams();
+
+        if (params?.search) {
+            query.set("search", params.search);
+        }
+
+        if (params?.subject) {
+            query.set("subject", params.subject);
+        }
+
+        const queryString = query.toString();
+
+        router.push(
+            queryString ? `/tuitions?${queryString}` : "/tuitions"
+        );
     };
 
+    // Home search
+    const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+
+        const query = search.trim();
+
+        navigateToTuitions({
+            search: query,
+        });
+
+        // Reset hero search text, so coming back to Home shows an empty field
+        setSearch("");
+    };
+
+    // Subject horizontal scroll
     const scrollSubjects = (direction: "left" | "right") => {
         const container = subjectsRef.current;
 
@@ -113,7 +152,7 @@ const HeroSection = () => {
         <section className="relative isolate overflow-hidden rounded-b-[50px] px-4 pb-10 pt-10 sm:px-6 sm:pb-12 sm:pt-14">
             <style>{`
                 @keyframes hero-halo {
-                    0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand) 45%, transparent); }
+                    0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand) 45%, transparent); }
                     70%, 100% { box-shadow: 0 0 0 14px color-mix(in srgb, var(--brand) 0%, transparent); }
                 }
                 @keyframes hero-chip-in {
@@ -124,24 +163,24 @@ const HeroSection = () => {
                 }
                 @keyframes hero-orb-a {
                     0%, 100% { transform: translate(0, 0); }
-                    50%      { transform: translate(40px, 24px); }
+                    50% { transform: translate(40px, 24px); }
                 }
                 @keyframes hero-orb-b {
                     0%, 100% { transform: translate(0, 0); }
-                    50%      { transform: translate(-36px, -20px); }
+                    50% { transform: translate(-36px, -20px); }
                 }
-                .hero-halo     { animation: hero-halo 2.4s ease-out 1.8s infinite; }
-                .hero-chip     { animation: hero-chip-in .6s ease-out backwards; }
+                .hero-halo { animation: hero-halo 2.4s ease-out 1.8s infinite; }
+                .hero-chip { animation: hero-chip-in .6s ease-out backwards; }
                 .hero-arrow-in { animation: hero-arrow-in .35s ease-out; }
-                .hero-orb-a    { animation: hero-orb-a 14s ease-in-out infinite; }
-                .hero-orb-b    { animation: hero-orb-b 17s ease-in-out infinite; }
+                .hero-orb-a { animation: hero-orb-a 14s ease-in-out infinite; }
+                .hero-orb-b { animation: hero-orb-b 17s ease-in-out infinite; }
                 @media (prefers-reduced-motion: reduce) {
                     .hero-halo, .hero-chip, .hero-arrow-in,
                     .hero-orb-a, .hero-orb-b { animation: none; }
                 }
             `}</style>
 
-            {/* Background Gradient */}
+            {/* Background */}
             <div
                 className="absolute inset-0 -z-10"
                 style={{
@@ -157,7 +196,7 @@ const HeroSection = () => {
                 }}
             />
 
-            {/* Soft drifting color orbs */}
+            {/* Background Orbs */}
             <div className="hero-orb-a pointer-events-none absolute -left-24 top-10 -z-10 h-72 w-72 rounded-full bg-brand/15 blur-3xl" />
             <div className="hero-orb-b pointer-events-none absolute -right-20 bottom-0 -z-10 h-80 w-80 rounded-full bg-brand/20 blur-3xl" />
 
@@ -194,12 +233,8 @@ const HeroSection = () => {
                         "mx-auto mt-7 flex max-w-2xl items-center rounded-[22px] bg-surface p-1.5 sm:mt-8"
                     )}
                 >
-                    {/* Input */}
                     <div className="flex h-11 min-w-0 flex-1 items-center gap-3 rounded-[18px] pl-3 pr-3 sm:h-12 sm:pr-5">
-                        <Search
-                            size={20}
-                            className="shrink-0 text-brand"
-                        />
+                        <Search size={20} className="shrink-0 text-brand" />
 
                         <input
                             type="text"
@@ -215,14 +250,10 @@ const HeroSection = () => {
                         />
                     </div>
 
-                    {/* Search Button */}
                     <button
                         type="submit"
                         className="hero-halo flex h-11 shrink-0 cursor-pointer items-center justify-center rounded-[18px] bg-brand px-5 text-sm font-bold text-brand-foreground transition-colors duration-200 hover:bg-brand-hover sm:h-12 sm:px-7"
-                        style={{
-                            outline: "none",
-                            fontWeight: 600,
-                        }}
+                        style={{ outline: "none", fontWeight: 600 }}
                     >
                         Search Tuitions
                     </button>
@@ -231,20 +262,17 @@ const HeroSection = () => {
                 {/* Subjects */}
                 <div {...reveal(700, "mx-auto mt-7 max-w-5xl sm:mt-8")}>
                     <div className="flex items-center gap-2 rounded-[28px] border border-brand/10! bg-surface/80 py-3 pl-3 pr-3 shadow-sm sm:gap-3 sm:py-4 sm:pl-4 sm:pr-4">
-
-                        {/* Left Button */}
                         {canScrollLeft && (
                             <button
                                 type="button"
                                 onClick={() => scrollSubjects("left")}
                                 aria-label="Scroll subjects left"
-                                className="hero-arrow-in flex h-10 w-10 shrink-0 cursor-pointer border border-brand/15!  items-center justify-center rounded-full bg-surface text-foreground transition-transform duration-200 hover:scale-105 sm:h-11 sm:w-11"
+                                className="hero-arrow-in flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-brand/15! bg-surface text-foreground transition-transform duration-200 hover:scale-105 sm:h-11 sm:w-11"
                             >
                                 <ChevronLeft size={20} />
                             </button>
                         )}
 
-                        {/* Subject List */}
                         <div
                             ref={subjectsRef}
                             onScroll={updateArrows}
@@ -259,7 +287,7 @@ const HeroSection = () => {
                             {subjects.map(({ name, icon: Icon }, index) => (
                                 <Link
                                     key={name}
-                                    href="/tuitions"
+                                    href={`/tuitions?subject=${encodeURIComponent(name)}`}
                                     className="hero-chip group flex h-11 shrink-0 items-center gap-2.5 rounded-2xl border border-transparent! bg-surface py-1 pl-1.5 pr-4 text-sm font-semibold text-foreground shadow-sm transition-all duration-200 hover:scale-[1.03] hover:border-brand/30! hover:text-brand hover:shadow-md sm:h-12 sm:text-base"
                                     style={{
                                         animationDelay: `${900 + index * 60}ms`,
@@ -269,18 +297,19 @@ const HeroSection = () => {
                                         <Icon size={17} strokeWidth={1.9} />
                                     </span>
 
-                                    <span className="whitespace-nowrap">{name}</span>
+                                    <span className="whitespace-nowrap">
+                                        {name}
+                                    </span>
                                 </Link>
                             ))}
                         </div>
 
-                        {/* Right Button */}
                         {canScrollRight && (
                             <button
                                 type="button"
                                 onClick={() => scrollSubjects("right")}
                                 aria-label="Scroll subjects right"
-                                className="hero-arrow-in flex h-10 w-10 shrink-0 border border-brand/15! cursor-pointer items-center justify-center rounded-full bg-surface text-foreground transition-transform duration-200 hover:scale-105 sm:h-11 sm:w-11"
+                                className="hero-arrow-in flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-brand/15! bg-surface text-foreground transition-transform duration-200 hover:scale-105 sm:h-11 sm:w-11"
                             >
                                 <ChevronRight size={20} />
                             </button>

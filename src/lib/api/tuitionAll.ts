@@ -19,14 +19,35 @@ export interface Tuition {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-export const getAllTuitions = async (): Promise<Tuition[]> => {
+interface GetAllTuitionsParams {
+    search?: string;
+    signal?: AbortSignal;
+}
+
+export const getAllTuitions = async ({
+    search = "",
+    signal,
+}: GetAllTuitionsParams = {}): Promise<Tuition[]> => {
     if (!API_BASE_URL) {
         throw new Error("API base URL is missing.");
     }
 
-    const response = await fetch(`${API_BASE_URL}/tuitions`, {
+    const params = new URLSearchParams();
+
+    if (search.trim()) {
+        params.set("search", search.trim());
+    }
+
+    const queryString = params.toString();
+
+    const url = queryString
+        ? `${API_BASE_URL}/tuitions?${queryString}`
+        : `${API_BASE_URL}/tuitions`;
+
+    const response = await fetch(url, {
         method: "GET",
         cache: "no-store",
+        signal,
     });
 
     if (!response.ok) {
