@@ -1,4 +1,6 @@
 
+import { authClient } from "@/lib/auth-client";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export type TuitionApprovalStatus = "pending" | "approved" | "rejected";
@@ -37,12 +39,25 @@ interface GetAdminTuitionsParams {
     search?: string;
 }
 
+// Get Admin Tuitions
 export const getAdminTuitions = async ({
     page = 1,
     limit = 10,
     status,
     search = "",
 }: GetAdminTuitionsParams = {}): Promise<AdminTuitionsResponse> => {
+    if (!API_BASE_URL) {
+        throw new Error("API base URL is not configured.");
+    }
+
+    // Get JWT Token
+    const { data, error } = await authClient.token();
+    const token = data?.token;
+
+    if (error || !token) {
+        throw new Error("Authentication required. Please log in.");
+    }
+
     const params = new URLSearchParams({
         page: String(page),
         limit: String(limit),
@@ -57,12 +72,13 @@ export const getAdminTuitions = async ({
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
+                authorization: `Bearer ${token}`,
             },
             cache: "no-store",
         }
     );
 
-    const result = await response.json();
+    const result = await response.json().catch(() => ({}));
 
     if (!response.ok || !result.success) {
         throw new Error(result.message || "Failed to fetch tuitions.");

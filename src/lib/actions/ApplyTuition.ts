@@ -1,4 +1,6 @@
 
+import { authClient } from "@/lib/auth-client";
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 // Application Form Data
@@ -36,6 +38,20 @@ export interface ApplicationLimitResponse {
     isPro: boolean;
 }
 
+// Get JWT Authentication Headers
+const getAuthHeaders = async () => {
+    const { data, error } = await authClient.token();
+    const token = data?.token;
+
+    if (error || !token) {
+        throw new Error("Authentication required. Please log in.");
+    }
+
+    return {
+        authorization: `Bearer ${token}`,
+    };
+};
+
 // Submit Application
 export const applyForTuition = async (
     data: ApplicationFormData
@@ -44,12 +60,18 @@ export const applyForTuition = async (
         throw new Error("API base URL is not configured.");
     }
 
+    const headers = await getAuthHeaders();
+
+    // Remove studentEmail because backend gets it from JWT
+    const { studentEmail, ...applicationData } = data;
+
     const res = await fetch(`${BASE_URL}/applications`, {
         method: "POST",
         headers: {
-            "content-type": "application/json",
+            ...headers,
+            "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(applicationData),
     });
 
     const result = await res.json().catch(() => ({}));
@@ -67,30 +89,30 @@ export const applyForTuition = async (
 };
 
 // Get Student Application Limit
-export const getApplicationLimit = async (
-    studentEmail: string
-): Promise<ApplicationLimitResponse> => {
-    if (!BASE_URL) {
-        throw new Error("API base URL is not configured.");
-    }
-
-    const res = await fetch(
-        `${BASE_URL}/applications/limit/${encodeURIComponent(studentEmail)}`,
-        {
-            cache: "no-store",
+export const getApplicationLimit =
+    async (): Promise<ApplicationLimitResponse> => {
+        if (!BASE_URL) {
+            throw new Error("API base URL is not configured.");
         }
-    );
 
-    const result = await res.json().catch(() => ({}));
+        const headers = await getAuthHeaders();
 
-    if (!res.ok) {
-        throw new Error(
-            result.message || "Failed to fetch application limit."
-        );
-    }
+        const res = await fetch(`${BASE_URL}/applications/limit`, {
+            method: "GET",
+            headers,
+            cache: "no-store",
+        });
 
-    return result;
-};
+        const result = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+            throw new Error(
+                result.message || "Failed to fetch application limit."
+            );
+        }
+
+        return result;
+    };
 
 export interface MyApplication {
     _id: string;
@@ -100,19 +122,18 @@ export interface MyApplication {
 }
 
 // Get Student's Applications
-export const getMyApplications = async (
-    studentEmail: string
-): Promise<MyApplication[]> => {
+export const getMyApplications = async (): Promise<MyApplication[]> => {
     if (!BASE_URL) {
         throw new Error("API base URL is not configured.");
     }
 
-    const res = await fetch(
-        `${BASE_URL}/my-applications?email=${encodeURIComponent(studentEmail)}`,
-        {
-            cache: "no-store",
-        }
-    );
+    const headers = await getAuthHeaders();
+
+    const res = await fetch(`${BASE_URL}/my-applications`, {
+        method: "GET",
+        headers,
+        cache: "no-store",
+    });
 
     const result = await res.json().catch(() => []);
 

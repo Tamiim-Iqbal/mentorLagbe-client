@@ -135,7 +135,7 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
 
     // Check Saved Tuition Status
     useEffect(() => {
-        if (isAuthPending || !isAuthenticated || !userEmail) {
+        if (isAuthPending || !isAuthenticated || !userEmail || !id) {
             return;
         }
 
@@ -143,7 +143,7 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
 
         const checkStatus = async () => {
             try {
-                const saved = await checkSavedTuition(userEmail, id);
+                const saved = await checkSavedTuition(id);
 
                 if (isMounted) {
                     setSavedKey(
@@ -169,7 +169,7 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
             return;
         }
 
-        if (user?.userRole !== "student") {
+        if (user?.userRole?.trim().toLowerCase() !== "student") {
             toast.error("Only students can save tuitions.");
             return;
         }
@@ -180,13 +180,13 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
 
         try {
             if (isSaved) {
-                await removeSavedTuition(userEmail, id);
+                await removeSavedTuition(id);
 
                 setSavedKey(null);
 
                 toast.success("Tuition removed from saved list.");
             } else {
-                await saveTuition(userEmail, id);
+                await saveTuition(id);
 
                 setSavedKey(`${userEmail}:${id}`);
 
@@ -230,7 +230,7 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
 
             if (
                 !isAuthenticated ||
-                user?.userRole !== "student" ||
+                user?.userRole?.trim().toLowerCase() !== "student" ||
                 !user.email
             ) {
                 setCheckingApplication(false);
@@ -241,8 +241,8 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
                 setCheckingApplication(true);
 
                 const [limit, applications] = await Promise.all([
-                    getApplicationLimit(user.email),
-                    getMyApplications(user.email),
+                    getApplicationLimit(),
+                    getMyApplications(),
                 ]);
 
                 if (!isMounted) return;
@@ -359,7 +359,8 @@ const TuitionDetailsClient = ({ id }: TuitionDetailsClientProps) => {
         })
         : "Recently";
 
-    const isStudent = user?.userRole === "student";
+    const isStudent =
+        user?.userRole?.trim().toLowerCase() === "student";
 
     const handleApplicationSuccess = () => {
         setHasApplied(true);

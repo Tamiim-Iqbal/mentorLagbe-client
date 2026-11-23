@@ -82,13 +82,13 @@ const TuitionCard = ({
 
     // Check saved status
     useEffect(() => {
-        if (!userEmail) return;
+        if (!userEmail || !_id) return;
 
         let isMounted = true;
 
         const checkStatus = async () => {
             try {
-                const saved = await checkSavedTuition(userEmail, _id);
+                const saved = await checkSavedTuition(_id);
 
                 if (isMounted) {
                     setSavedKey(
@@ -125,7 +125,7 @@ const TuitionCard = ({
 
         try {
             if (isSaved) {
-                await removeSavedTuition(userEmail, _id);
+                await removeSavedTuition(_id);
 
                 setSavedKey(null);
 
@@ -134,7 +134,7 @@ const TuitionCard = ({
 
                 toast.success("Tuition removed from saved list.");
             } else {
-                await saveTuition(userEmail, _id);
+                await saveTuition(_id);
 
                 setSavedKey(`${userEmail}:${_id}`);
 

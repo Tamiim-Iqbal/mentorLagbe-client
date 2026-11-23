@@ -1,7 +1,10 @@
 
+import { authClient } from "@/lib/auth-client";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
 type SaveTransactionParams = {
     sessionId: string;
-    email: string;
 };
 
 type SaveTransactionResponse = {
@@ -14,29 +17,42 @@ type SaveTransactionResponse = {
 
 export async function saveTransaction({
     sessionId,
-    email,
 }: SaveTransactionParams): Promise<SaveTransactionResponse> {
-    const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments`,
-        {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                sessionId,
-                email,
-            }),
-        }
-    );
+    if (!API_BASE_URL) {
+        throw new Error("API base URL is not configured.");
+    }
 
-    const data: SaveTransactionResponse = await response.json();
+    // Get JWT Token
+    const { data, error } = await authClient.token();
+    const token = data?.token;
 
-    if (!response.ok) {
+    if (error || !token) {
+        throw new Error("Authentication required. Please log in.");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/payments`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+            sessionId,
+        }),
+    });
+
+    const result: SaveTransactionResponse = await response
+        .json()
+        .catch(() => ({
+            success: false,
+            message: "Failed to save transaction.",
+        }));
+
+    if (!response.ok || !result.success) {
         throw new Error(
-            data.message || "Failed to save transaction."
+            result.message || "Failed to save transaction."
         );
     }
 
-    return data;
+    return result;
 }

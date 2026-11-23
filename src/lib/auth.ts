@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { MongoClient } from "mongodb";
 import { mongodbAdapter } from "@better-auth/mongo-adapter";
+import { jwt } from "better-auth/plugins";
 
 const client = new MongoClient(process.env.MONGODB_URI as string);
 const db = client.db("mentorlagbe");
@@ -15,6 +16,7 @@ export const auth = betterAuth({
     minPasswordLength: 6,
     autoSignIn: false,
   },
+
   user: {
     additionalFields: {
       userRole: {
@@ -39,7 +41,7 @@ export const auth = betterAuth({
         type: "string",
         required: false,
         defaultValue: "",
-        input:true,
+        input: true,
       },
     },
   },
@@ -47,6 +49,17 @@ export const auth = betterAuth({
     google: {
       clientId: process.env.BETTER_AUTH_GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.BETTER_AUTH_GOOGLE_CLIENT_SECRET as string,
+    },
+  },
+  // JWT configuration
+  plugins: [jwt()],
+
+  // Session configuration
+  session: {
+    cookieCache: {
+      enabled: true,
+      strategy: "jwt",
+      maxAge: 60 * 60 * 24 * 7,
     },
   },
 });

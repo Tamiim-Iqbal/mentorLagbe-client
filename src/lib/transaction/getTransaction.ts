@@ -1,4 +1,8 @@
 
+import { authClient } from "@/lib/auth-client";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
 export type Transaction = {
     _id: string;
     sessionId: string;
@@ -37,25 +41,47 @@ export async function getTransactions({
     limit = 10,
     search = "",
 }: GetTransactionsParams = {}): Promise<GetTransactionsResponse> {
+    if (!API_BASE_URL) {
+        throw new Error("API base URL is not configured.");
+    }
+
+    // Get JWT Token
+    const { data, error } = await authClient.token();
+    const token = data?.token;
+
+    if (error || !token) {
+        throw new Error("Authentication required. Please log in.");
+    }
+
     const params = new URLSearchParams({
         page: String(page),
         limit: String(limit),
-        search,
+        search: search.trim(),
     });
 
     const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/transactions?${params.toString()}`,
+        `${API_BASE_URL}/admin/transactions?${params.toString()}`,
         {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
+                authorization: `Bearer ${token}`,
             },
             cache: "no-store",
         }
     );
 
     const result: GetTransactionsResponse =
-        await response.json();
+        await response.json().catch(() => ({
+            success: false,
+            data: [],
+            pagination: {
+                total: 0,
+                page,
+                limit,
+                totalPages: 0,
+            },
+        }));
 
     if (!response.ok || !result.success) {
         throw new Error(

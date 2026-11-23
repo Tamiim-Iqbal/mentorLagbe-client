@@ -23,10 +23,9 @@ import { useAuth } from "@/app/context/AuthContext";
 import {
     createTuition,
     getTuitionLimit,
-    TuitionLimitResponse,
+    type TuitionLimitResponse,
     type TuitionFormData,
 } from "@/lib/actions/postTuition";
-
 
 import { uploadImage } from "@/lib/actions/uploadImage";
 
@@ -121,7 +120,7 @@ const PostTuitionForm = () => {
 
         const fetchLimit = async () => {
             try {
-                const result = await getTuitionLimit(user.email);
+                const result = await getTuitionLimit();
 
                 if (isMounted) {
                     setTuitionLimit(result);
@@ -153,7 +152,7 @@ const PostTuitionForm = () => {
         if (!user?.email) return;
 
         try {
-            const result = await getTuitionLimit(user.email);
+            const result = await getTuitionLimit();
             setTuitionLimit(result);
         } catch (error) {
             console.error("Failed to refresh tuition limit:", error);

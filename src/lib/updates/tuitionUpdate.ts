@@ -1,4 +1,6 @@
 
+import { authClient } from "@/lib/auth-client";
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export interface TuitionUpdateData {
@@ -27,17 +29,35 @@ export const updateTuition = async (
         throw new Error("API base URL is not configured.");
     }
 
-    const res = await fetch(`${BASE_URL}/tuitions/${id}`, {
-        method: "PATCH",
-        headers: {
-            "content-type": "application/json",
-        },
-        body: JSON.stringify(data),
-    });
+    // Get JWT Token
+    const { data: tokenData, error } = await authClient.token();
+    const token = tokenData?.token;
 
-    const result = await res.json().catch(() => ({}));
+    if (error || !token) {
+        throw new Error("Authentication required. Please log in.");
+    }
 
-    if (!res.ok) {
+    // Remove tutorEmail from request body
+    const { tutorEmail, ...tuitionData } = data;
+
+    const res = await fetch(
+        `${BASE_URL.replace(/\/$/, "")}/tuitions/${encodeURIComponent(id)}`,
+        {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(tuitionData),
+        }
+    );
+
+    const result: TuitionUpdateResponse = await res.json().catch(() => ({
+        success: false,
+        message: "Failed to update tuition.",
+    }));
+
+    if (!res.ok || !result.success) {
         throw new Error(
             result.message || `Failed to update tuition (${res.status})`
         );
