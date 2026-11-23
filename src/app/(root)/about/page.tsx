@@ -1,10 +1,14 @@
-import JoinMentorLagbe from '@/components/home/JoinMentorLagbe';
-import React from 'react';
 
-const AboutPage = () => {
+import JoinMentorLagbe from "@/components/home/JoinMentorLagbe";
+import AboutHero from "./AboutHero";
+import AboutHowItWorks from "./AboutHowItWorks"
+
+export default function AboutPage() {
     return (
-        <JoinMentorLagbe />
+        <main className="min-h-screen bg-background">
+            <AboutHero />
+            <AboutHowItWorks />
+            <JoinMentorLagbe />
+        </main>
     );
-};
-
-export default AboutPage;
+}
