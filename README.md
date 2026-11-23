@@ -1,37 +1,152 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MentorLagbe — Client
 
-## Getting Started
+A modern tuition and mentorship platform that connects students with tutors across Bangladesh. Students can explore tuition opportunities, apply to listings, save their favorites, and connect with mentors. Tutors can publish tuition listings, manage applicants, and grow their reach with PRO membership.
 
-First, run the development server:
+## 🌐 Live Website
+
+**[Visit MentorLagbe](https://web-mentor-lagbe.vercel.app/)**
+
+## 📌 Project Overview
+
+MentorLagbe is designed to make finding tuition opportunities and connecting with the right mentors easier. It provides separate experiences for students, mentors, and administrators.
+
+The platform includes a responsive interface, role-based dashboards, tuition management, application workflows, and premium membership options.
+
+## ✨ Features
+
+### 👨‍🎓 For Students
+- Browse approved and active tuition listings.
+- Search and filter tuition opportunities.
+- View detailed tuition information.
+- Apply directly to tuition listings.
+- Bookmark and manage saved tuitions.
+- Track applications and learning activities.
+- Access a personal student dashboard.
+
+### 👨‍🏫 For Mentors
+- Create and manage tuition listings.
+- Receive and manage student applications.
+- Track tuition approval status.
+- Manage mentor profiles.
+- Access a dedicated mentor dashboard.
+- Upgrade to PRO for additional features.
+
+### 🛡️ For Administrators
+- Manage registered users.
+- Review submitted tuition listings.
+- Approve or reject tuition submissions.
+- Manage platform activities.
+- Monitor transactions.
+
+### 💎 Membership
+- Free and PRO membership plans.
+- Role-based pricing for students and mentors.
+- Stripe-powered checkout.
+- PRO membership benefits and verification badges.
+
+### 🎨 General
+- Responsive design for mobile, tablet, and desktop.
+- Role-based navigation and dashboards.
+- Authentication and protected routes.
+- Interactive UI with loading and feedback states.
+
+## 🛠️ Technology Stack
+
+| Category | Technologies |
+|---|---|
+| Framework | Next.js 16 |
+| Library | React 19 |
+| Language | TypeScript |
+| Styling | Tailwind CSS 4 |
+| Authentication | Better Auth |
+| Database Integration | MongoDB |
+| Payments | Stripe |
+| Icons | Lucide React, React Icons |
+| UI Components | shadcn/ui, Base UI |
+| Notifications | React Hot Toast |
+| Deployment | Vercel |
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+Make sure you have installed:
+
+- Node.js (LTS recommended)
+- npm
+- Git
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/Tamiim-Iqbal/mentorLagbe-client.git
+```
+
+### 2. Navigate to the Project
+
+```bash
+cd mentorLagbe-client
+```
+
+### 3. Install Dependencies
+
+```bash
+npm install
+```
+
+### 4. Configure Environment Variables
+
+Create a `.env.local` file in the project root.
+
+Configure the required environment variables for:
+
+- Backend API URL
+- Better Auth configuration
+- MongoDB connection
+- Stripe integration
+
+Use the exact variable names and values expected by the application's configuration. Never commit your `.env.local` file or expose secret keys.
+
+### 5. Run the Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📜 Available Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | Description |
+|---|---|
+| `npm run dev` | Start the development server |
+| `npm run build` | Build the production application |
+| `npm run start` | Start the production server |
+| `npm run lint` | Run ESLint |
 
-## Learn More
+## 🌍 Deployment
 
-To learn more about Next.js, take a look at the following resources:
+The client application is deployed on **Vercel**.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Production URL:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+https://web-mentor-lagbe.vercel.app/
 
-## Deploy on Vercel
+For deployment, configure all required environment variables in the Vercel project settings and deploy the application.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🔗 Related Repository
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# mentorLagbe-client
+**Backend Repository:**  
+https://github.com/Tamiim-Iqbal/mentorLagbe-server
+
+## 👨‍💻 Developer
+
+**Tamim Iqbal**
+
+- GitHub: [@Tamiim-Iqbal](https://github.com/Tamiim-Iqbal)
+
+---
+
+<p align="center">
+  Built to make finding the right tutor and teaching opportunities easier.
+</p>
