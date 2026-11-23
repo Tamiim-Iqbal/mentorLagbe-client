@@ -412,11 +412,11 @@ const AdminTuitions = () => {
         label: string;
         value: TuitionTab;
     }[] = [
-        { label: "All", value: "all" },
-        { label: "Pending", value: "pending" },
-        { label: "Accepted", value: "approved" },
-        { label: "Rejected", value: "rejected" },
-    ];
+            { label: "All", value: "all" },
+            { label: "Pending", value: "pending" },
+            { label: "Accepted", value: "approved" },
+            { label: "Rejected", value: "rejected" },
+        ];
 
     return (
         <div className="space-y-6">
@@ -447,21 +447,59 @@ const AdminTuitions = () => {
             </div>
 
             {/* Tabs */}
-            <div className="flex flex-wrap items-center gap-2 border-b border-border">
-                {tabs.map((tab) => (
-                    <button
-                        key={tab.value}
-                        type="button"
-                        onClick={() => handleTabChange(tab.value)}
-                        className={`cursor-pointer border-b-2 px-4 py-3 text-sm font-semibold transition ${
-                            activeTab === tab.value
-                                ? "border-brand text-brand"
-                                : "border-transparent text-muted hover:text-foreground"
-                        }`}
-                    >
-                        {tab.label} ({tabCounts[tab.value]})
-                    </button>
-                ))}
+            <div className="flex flex-wrap items-center gap-2">
+                {tabs.map((tab) => {
+                    const isActive = activeTab === tab.value;
+
+                    const activeStyle =
+                        tab.value === "pending"
+                            ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                            : tab.value === "approved"
+                                ? "bg-brand/10 text-brand"
+                                : tab.value === "rejected"
+                                    ? "bg-red-500/10 text-red-500"
+                                    : "bg-foreground/5 text-foreground";
+
+                    const TabIcon =
+                        tab.value === "pending"
+                            ? Clock3
+                            : tab.value === "approved"
+                                ? CheckCircle2
+                                : tab.value === "rejected"
+                                    ? XCircle
+                                    : Search;
+
+                    const countStyle =
+                        tab.value === "pending"
+                            ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                            : tab.value === "approved"
+                                ? "bg-brand/10 text-brand"
+                                : tab.value === "rejected"
+                                    ? "bg-red-500/10 text-red-500"
+                                    : "bg-foreground/5 text-muted";
+
+                    return (
+                        <button
+                            key={tab.value}
+                            type="button"
+                            onClick={() => handleTabChange(tab.value)}
+                            className={`inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition ${isActive
+                                    ? activeStyle
+                                    : "bg-transparent text-muted hover:bg-background hover:text-foreground"
+                                }`}
+                        >
+                            <TabIcon size={15} strokeWidth={2.2} />
+
+                            {tab.label}
+
+                            <span
+                                className={`inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums ${countStyle}`}
+                            >
+                                {tabCounts[tab.value]}
+                            </span>
+                        </button>
+                    );
+                })}
             </div>
 
             {/* Search */}
@@ -670,11 +708,10 @@ const AdminTuitions = () => {
                                             {/* Active Status */}
                                             <td className="px-2 py-4">
                                                 <span
-                                                    className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full py-1.5 pl-2 pr-2 text-xs font-semibold ${
-                                                        tuition.isActive
-                                                            ? "bg-brand/10 text-brand"
-                                                            : "bg-background text-muted"
-                                                    }`}
+                                                    className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full py-1.5 pl-2 pr-2 text-xs font-semibold ${tuition.isActive
+                                                        ? "bg-brand/10 text-brand"
+                                                        : "bg-background text-muted"
+                                                        }`}
                                                 >
                                                     <Power
                                                         size={12}
