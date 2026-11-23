@@ -16,6 +16,7 @@ import TuitionCard, {
 } from "@/components/home/TuitionCard";
 
 import { getMySavedTuitions } from "@/lib/api/savedTuitions";
+
 const SavedTuitionsClient = () => {
     const {
         user,
@@ -40,7 +41,7 @@ const SavedTuitionsClient = () => {
 
         const fetchSavedTuitions = async () => {
             try {
-                const result = await getMySavedTuitions(userEmail);
+                const result = await getMySavedTuitions();
 
                 const savedTuitions: Tuition[] = Array.isArray(result)
                     ? result

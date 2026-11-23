@@ -94,7 +94,7 @@ const ApplicantsClient = () => {
                 setIsLoading(true);
                 setError("");
 
-                const data = await getMyApplicants(user.email);
+                const data = await getMyApplicants();
 
                 const applicantData: Applicant[] = Array.isArray(data)
                     ? data
@@ -143,8 +143,7 @@ const ApplicantsClient = () => {
 
             const result = await updateApplicantStatus(
                 applicantId,
-                status,
-                user.email
+                status
             );
 
             if (!result.success || !result.status) {
@@ -158,9 +157,9 @@ const ApplicantsClient = () => {
                 previous.map((applicant) =>
                     (applicant._id || applicant.id) === applicantId
                         ? {
-                            ...applicant,
-                            status: result.status!,
-                        }
+                              ...applicant,
+                              status: result.status!,
+                          }
                         : applicant
                 )
             );
@@ -418,8 +417,8 @@ const ApplicantsClient = () => {
                                                         applicant.status === "accepted"
                                                             ? "bg-brand/10 text-brand"
                                                             : applicant.status === "rejected"
-                                                                ? "bg-red-500/10 text-red-500"
-                                                                : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                                              ? "bg-red-500/10 text-red-500"
+                                                              : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
                                                     }`}
                                                 >
                                                     {applicant.status === "accepted" ? (

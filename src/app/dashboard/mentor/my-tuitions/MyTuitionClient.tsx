@@ -82,7 +82,7 @@ const MyTuitionClient = () => {
 
         const fetchMyTuitions = async () => {
             try {
-                const data = await getMyTuitions(user.email);
+                const data = await getMyTuitions();
 
                 console.log("My Tuitions:", data);
 
@@ -163,7 +163,6 @@ const MyTuitionClient = () => {
 
             const result = await updateTuitionStatus(
                 tuitionId,
-                user.email,
                 newStatus
             );
 
@@ -215,10 +214,7 @@ const MyTuitionClient = () => {
         try {
             setIsDeleting(true);
 
-            const result = await deleteMentorTuition(
-                tuitionId,
-                user.email
-            );
+            const result = await deleteMentorTuition(tuitionId);
 
             // Remove tuition from UI after successful deletion
             setTuitions((previousTuitions) =>

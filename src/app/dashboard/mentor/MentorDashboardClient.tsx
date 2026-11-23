@@ -44,8 +44,8 @@ const MentorDashboardClient = () => {
         const fetchDashboardData = async () => {
             try {
                 const [tuitionData, applicantData] = await Promise.all([
-                    getMyTuitions(user.email),
-                    getMyApplicants(user.email),
+                    getMyTuitions(),
+                    getMyApplicants(),
                 ]);
 
                 const tuitionList: ITuition[] = Array.isArray(tuitionData)

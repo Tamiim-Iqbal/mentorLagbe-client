@@ -39,7 +39,7 @@ const StudentDashboardClient = () => {
 
         const fetchDashboardData = async () => {
             try {
-                const applicationData = await getMyApplications(user.email);
+                const applicationData = await getMyApplications();
 
                 const applicationList = Array.isArray(applicationData)
                     ? applicationData

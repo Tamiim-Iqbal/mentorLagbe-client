@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -23,7 +24,6 @@ type Props = {
 
 export default function PaymentSuccessClient({
     sessionId,
-    email,
     membership,
 }: Props) {
     const { updateUser } = useAuth();
@@ -41,7 +41,6 @@ export default function PaymentSuccessClient({
 
             const result = await saveTransaction({
                 sessionId,
-                email,
             });
 
             if (!result.success) {
@@ -70,7 +69,7 @@ export default function PaymentSuccessClient({
         } finally {
             setIsLoading(false);
         }
-    }, [sessionId, email, updateUser]);
+    }, [sessionId, updateUser]);
 
     // Initial payment verification
     useEffect(() => {

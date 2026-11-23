@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -17,6 +18,7 @@ import {
 import { useAuth } from "@/app/context/AuthContext";
 import NoUserState from "../../_components/NoUserState";
 import { getMyApplications } from "@/lib/api/myApplications";
+import { authClient } from "@/lib/auth-client";
 import { IApplication } from "@/app/type/studentType";
 
 const MyApplicationsClient = () => {
@@ -35,7 +37,7 @@ const MyApplicationsClient = () => {
 
         const fetchMyApplications = async () => {
             try {
-                const data = await getMyApplications(user.email);
+                const data = await getMyApplications();
 
                 console.log("My Applications:", data);
 
@@ -81,28 +83,48 @@ const MyApplicationsClient = () => {
             setCancelingId(id);
             setError("");
 
+            // Get JWT Token
+            const { data: tokenData, error: tokenError } =
+                await authClient.token();
+
+            const token = tokenData?.token;
+
+            if (tokenError || !token) {
+                throw new Error(
+                    "Authentication required. Please log in."
+                );
+            }
+
             const response = await fetch(
                 `${process.env.NEXT_PUBLIC_API_BASE_URL}/my-applications/${id}`,
                 {
                     method: "DELETE",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
                 }
             );
 
+            const data = await response.json();
+
             if (!response.ok) {
-                throw new Error("Failed to cancel application");
+                throw new Error(
+                    data.message || "Failed to cancel application."
+                );
             }
 
             setApplications((prev) =>
                 prev.filter(
-                    (application) =>
-                        (application._id) !== id
+                    (application) => application._id !== id
                 )
             );
         } catch (error) {
             console.error("Failed to cancel application:", error);
 
             setError(
-                "Unable to cancel application. Please try again."
+                error instanceof Error
+                    ? error.message
+                    : "Unable to cancel application. Please try again."
             );
         } finally {
             setCancelingId(null);
@@ -257,7 +279,7 @@ const MyApplicationsClient = () => {
                             <tbody className="divide-y divide-border">
                                 {applications.map((application) => {
                                     const applicationId =
-                                        application._id ||  "";
+                                        application._id || "";
 
                                     const statusStyles = {
                                         pending: {
